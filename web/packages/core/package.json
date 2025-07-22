@@ -1,0 +1,21 @@
+{
+  "name": "@zigzag/core",
+  "version": "1.0.0",
+  "description": "Core ZigZag hyperthogonal data structure implementation",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/index.ts",
+    "test": "jest"
+  },
+  "keywords": ["zigzag", "ted-nelson", "hyperthogonal"],
+  "author": "Adam Vials Moore",
+  "license": "LGPL-2.1-or-later",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.6.0",
+    "typescript": "^5.2.2",
+    "ts-node": "^10.9.1"
+  }
+}

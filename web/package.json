@@ -1,0 +1,27 @@
+{
+  "name": "zigzag-web",
+  "version": "1.0.0",
+  "description": "Modern web implementation of Ted Nelson's ZigZag hyperthogonal structure",
+  "author": "Adam Vials Moore",
+  "license": "LGPL-2.1-or-later OR XPL-1.0",
+  "copyright": "Copyright (c) Ted Nelson and Adam Vials Moore",
+  "keywords": ["zigzag", "hypertext", "ted-nelson", "hyperthogonal", "data-structure"],
+  "homepage": "https://github.com/adammoore/gzigzag",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/adammoore/gzigzag.git"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "demo": "cd packages/core && npm run dev",
+    "build": "cd packages/core && npm run build",
+    "test": "cd packages/core && npm test"
+  },
+  "devDependencies": {
+    "@types/node": "^20.6.0",
+    "typescript": "^5.2.2",
+    "ts-node": "^10.9.1"
+  }
+}
