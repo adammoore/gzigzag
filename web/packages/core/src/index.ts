@@ -1,18 +1,18 @@
 // ZigZag Core TypeScript Implementation - Proof of Concept
 // Copyright (c) Ted Nelson and Adam Vials Moore
 
-type CellId = string;
-type DimensionName = string;
-type Direction = 1 | -1;
+export type CellId = string;
+export type DimensionName = string;
+export type Direction = 1 | -1;
 
-class ZigZagError extends Error {
+export class ZigZagError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'ZigZagError';
   }
 }
 
-class ZZCell {
+export class ZZCell {
   private _id: CellId;
   private _text: string;
   private _connections: Map<DimensionName, { positive?: CellId; negative?: CellId }>;
@@ -166,7 +166,7 @@ class ZZCell {
   }
 }
 
-class ZZSpace {
+export class ZZSpace {
   private _id: string;
   private _cells: Map<CellId, ZZCell>;
   private _dimensions: Set<DimensionName>;
@@ -220,7 +220,7 @@ class ZZSpace {
 }
 
 // BIOCHEMISTRY DEMO (Your YouTube demo recreation!)
-function createKrebsCycleDemo(): ZZSpace {
+export function createKrebsCycleDemo(): ZZSpace {
   const space = new ZZSpace('biochemistry_demo');
   const home = space.getHomeCell();
   home.text = 'Krebs Cycle Demo';
@@ -261,7 +261,7 @@ function createKrebsCycleDemo(): ZZSpace {
   return space;
 }
 
-function animateKrebsCycle(space: ZZSpace): CellId[] {
+export function animateKrebsCycle(space: ZZSpace): CellId[] {
   const home = space.getHomeCell();
   const acetylCoA = home.step('d.biochem', 1);
   
@@ -310,5 +310,7 @@ function runDemo(): void {
   console.log('\n🎉 Success! ZigZag is working - "locally rational, globally paradoxical"');
 }
 
-// Run the demo
-runDemo();
+// Run the demo if not in a module environment
+if (typeof module !== 'undefined') {
+  runDemo();
+}

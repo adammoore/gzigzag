@@ -12,7 +12,8 @@
     "url": "https://github.com/adammoore/gzigzag.git"
   },
   "workspaces": [
-    "packages/*"
+    "packages/core",
+    "packages/client"
   ],
   "scripts": {
     "demo": "cd packages/core && npm run dev",
