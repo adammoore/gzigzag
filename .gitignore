@@ -1,0 +1,189 @@
+# ZigZag Web - Comprehensive .gitignore
+# Modern web development + Original Java GzigZag
+
+# ==================================================
+# Node.js and npm
+# ==================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.npm
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# ==================================================
+# Build outputs and distributions
+# ==================================================
+dist/
+build/
+*.tsbuildinfo
+.vite/
+.cache/
+
+# ==================================================
+# TypeScript
+# ==================================================
+*.tsbuildinfo
+.tsc-incremental/
+
+# ==================================================
+# React and Vite
+# ==================================================
+.vite/
+dist-ssr/
+*.local
+coverage/
+.nyc_output/
+
+# ==================================================
+# Environment and configuration
+# ==================================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+
+# ==================================================
+# IDE and Editor files
+# ==================================================
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.swp
+*.swo
+*~
+.idea/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# ==================================================
+# Operating System files
+# ==================================================
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.directory
+.gvfs
+
+# ==================================================
+# Original Java GzigZag files (preserve structure)
+# ==================================================
+# Java build outputs
+*.class
+*.jar
+*.war
+*.ear
+target/
+.mvn/
+mvnw
+mvnw.cmd
+
+# Java IDE files
+*.iml
+.idea/
+.project
+.classpath
+.settings/
+
+# ==================================================
+# ZigZag-specific files
+# ==================================================
+# Large demo data (keep structure, ignore large files)
+Z/**/large_dataset*
+Z/**/backup_*
+Z/**/temp_*
+
+# Generated ZigZag exports
+*.zzexport
+*.zzbackup
+
+# ==================================================
+# Logs and temporary files
+# ==================================================
+logs/
+*.log
+*.log.*
+.tmp/
+tmp/
+temp/
+
+# ==================================================
+# Testing and coverage
+# ==================================================
+coverage/
+.nyc_output/
+junit.xml
+test-results/
+playwright-report/
+test-results.xml
+
+# ==================================================
+# Database files (for future backend)
+# ==================================================
+*.db
+*.sqlite
+*.sqlite3
+
+# ==================================================
+# Docker (for future deployment)
+# ==================================================
+.dockerignore
+
+# ==================================================
+# Deployment and CI/CD
+# ==================================================
+.vercel/
+.netlify/
+.render/
+
+# ==================================================
+# Package manager lock files (keep one, ignore others)
+# ==================================================
+# Keep package-lock.json, ignore others
+yarn.lock
+pnpm-lock.yaml
+
+# ==================================================
+# Large binary files
+# ==================================================
+*.zip
+*.tar.gz
+*.rar
+*.7z
