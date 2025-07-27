@@ -1,2 +1,3 @@
-export * from './FileLoadDialog';
-export * from './ImportProgress';
+// packages/client/src/components/file/index.ts
+export { FileLoadDialog } from './FileLoadDialog';
+export { ImportProgress } from './ImportProgress';

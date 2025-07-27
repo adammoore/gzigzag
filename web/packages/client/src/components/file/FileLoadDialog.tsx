@@ -1,154 +1,171 @@
-import React from 'react';
-import { ZZSpace } from '@zigzag/core';
-import { ZZCursor } from '../../App';
-import { ZZCellComponent } from '../ZZCellComponent';
+import React, { useCallback, useState } from 'react';
 import styled from 'styled-components';
 
-const RankContainer = styled.div`
+const DialogOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
   display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
-  padding: 20px;
-  overflow: auto;
-  height: 100%;
-  background: #1a1a1a;
-`;
-
-const GridContainer = styled.div`
-  display: grid;
-  gap: 10px;
   align-items: center;
-  justify-items: center;
+  z-index: 1000;
 `;
 
-const ConnectionLine = styled.div<{ direction: 'horizontal' | 'vertical' }>`
-  background: #666;
-  ${props => props.direction === 'horizontal' ? 
-    'width: 20px; height: 2px;' : 
-    'width: 2px; height: 20px;'
+const DialogContainer = styled.div`
+  background: #2a2a2a;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 500px;
+  width: 90%;
+  color: white;
+`;
+
+const DropZone = styled.div<{ isDragOver: boolean }>`
+  border: 2px dashed ${props => props.isDragOver ? '#00ff00' : '#666'};
+  border-radius: 8px;
+  padding: 40px;
+  text-align: center;
+  margin: 20px 0;
+  background: ${props => props.isDragOver ? '#003300' : '#1a1a1a'};
+  transition: all 0.3s ease;
+  cursor: pointer;
+`;
+
+const FileInput = styled.input`
+  display: none;
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: 15px;
+  justify-content: flex-end;
+  margin-top: 20px;
+`;
+
+const Button = styled.button<{ variant?: 'primary' | 'secondary' }>`
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  background: ${props => props.variant === 'primary' ? '#00ff00' : '#444'};
+  color: ${props => props.variant === 'primary' ? '#000' : '#fff'};
+  
+  &:hover {
+    background: ${props => props.variant === 'primary' ? '#00dd00' : '#555'};
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 `;
 
-interface RankViewProps {
-  space: ZZSpace;
-  cursor: ZZCursor;
-  onCursorChange: (cursor: ZZCursor) => void;
+interface FileLoadDialogProps {
+  onLoad: (files: FileList) => void;
+  onClose: () => void;
 }
 
-export const RankView: React.FC<RankViewProps> = ({
-  space,
-  cursor,
-  onCursorChange
-}) => {
-  const currentCell = space.getCell(cursor.cellId);
-  if (!currentCell) return <div>No cell found</div>;
+export const FileLoadDialog: React.FC<FileLoadDialogProps> = ({ onLoad, onClose }) => {
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
 
-  // Build 2D grid around current cell
-  const GRID_SIZE = 7; // 7x7 grid centered on current cell
-  const CENTER = Math.floor(GRID_SIZE / 2);
-  
-  // Find the "head" cell for both dimensions to establish grid origin
-  let originCell = currentCell;
-  
-  // Go to top-left corner of the current region
-  for (let i = 0; i < CENTER; i++) {
-    const upCell = originCell.step('d.2', -1);
-    if (upCell) originCell = upCell;
-  }
-  for (let i = 0; i < CENTER; i++) {
-    const leftCell = originCell.step('d.1', -1);
-    if (leftCell) originCell = leftCell;
-  }
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  }, []);
 
-  // Build grid from origin
-  const grid: Array<Array<any>> = [];
-  let currentRowStart = originCell;
-  
-  for (let row = 0; row < GRID_SIZE; row++) {
-    const gridRow: Array<any> = [];
-    let currentCellInRow = currentRowStart;
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
     
-    for (let col = 0; col < GRID_SIZE; col++) {
-      gridRow.push(currentCellInRow);
-      if (col < GRID_SIZE - 1) {
-        currentCellInRow = currentCellInRow?.step('d.1', 1) || null;
-      }
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      setSelectedFiles(files);
     }
-    
-    grid.push(gridRow);
-    
-    if (row < GRID_SIZE - 1) {
-      currentRowStart = currentRowStart?.step('d.2', 1) || null;
-    }
-  }
+  }, []);
 
-  // Calculate grid template
-  const gridTemplateColumns = Array(GRID_SIZE * 2 - 1).fill(0).map((_, i) => 
-    i % 2 === 0 ? 'auto' : '20px'
-  ).join(' ');
-  
-  const gridTemplateRows = Array(GRID_SIZE * 2 - 1).fill(0).map((_, i) => 
-    i % 2 === 0 ? 'auto' : '20px'
-  ).join(' ');
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      setSelectedFiles(files);
+    }
+  }, []);
+
+  const handleLoad = useCallback(() => {
+    if (selectedFiles) {
+      onLoad(selectedFiles);
+    }
+  }, [selectedFiles, onLoad]);
+
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   return (
-    <RankContainer>
-      <GridContainer
-        style={{
-          gridTemplateColumns,
-          gridTemplateRows,
-        }}
-      >
-        {grid.map((row, rowIndex) => 
-          row.map((cell, colIndex) => {
-            const gridRow = rowIndex * 2 + 1;
-            const gridCol = colIndex * 2 + 1;
-            
-            return (
-              <React.Fragment key={`${rowIndex}-${colIndex}`}>
-                {/* Cell */}
-                <div
-                  style={{
-                    gridRow,
-                    gridColumn: gridCol,
-                  }}
-                >
-                  {cell && (
-                    <ZZCellComponent
-                      cell={cell}
-                      isActive={cell.id === cursor.cellId}
-                      onClick={() => onCursorChange({ ...cursor, cellId: cell.id })}
-                    />
-                  )}
-                </div>
-                
-                {/* Horizontal connection line */}
-                {cell && colIndex < row.length - 1 && cell.step('d.1', 1) && (
-                  <ConnectionLine
-                    direction="horizontal"
-                    style={{
-                      gridRow,
-                      gridColumn: gridCol + 1,
-                    }}
-                  />
-                )}
-                
-                {/* Vertical connection line */}
-                {cell && rowIndex < grid.length - 1 && cell.step('d.2', 1) && (
-                  <ConnectionLine
-                    direction="vertical"
-                    style={{
-                      gridRow: gridRow + 1,
-                      gridColumn: gridCol,
-                    }}
-                  />
-                )}
-              </React.Fragment>
-            );
-          })
-        )}
-      </GridContainer>
-    </RankContainer>
+    <DialogOverlay onClick={onClose}>
+      <DialogContainer onClick={(e) => e.stopPropagation()}>
+        <h2>Load Original GzigZag Z Directory</h2>
+        <p>Select the Z directory from your original GzigZag installation, or drag and drop it here.</p>
+        
+        <DropZone
+          isDragOver={isDragOver}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          {selectedFiles ? (
+            <div>
+              <p>✅ Selected: {selectedFiles.length} files</p>
+              <p style={{ color: '#00ff00', fontSize: '14px' }}>
+                Ready to import Z directory structure
+              </p>
+            </div>
+          ) : (
+            <div>
+              <p>📁 Drop Z directory here</p>
+              <p style={{ color: '#999', fontSize: '14px' }}>
+                Or click to browse for Z directory contents
+              </p>
+            </div>
+          )}
+        </DropZone>
+
+        <FileInput
+          ref={fileInputRef}
+          type="file"
+          multiple
+          webkitdirectory
+          directory=""
+          onChange={handleFileSelect}
+          accept=""
+        />
+
+        <div style={{ color: '#999', fontSize: '12px', marginBottom: '20px' }}>
+          <strong>Note:</strong> Select the entire Z directory structure. The browser will ask you to 
+          select a folder and will include all subdirectories and files automatically.
+        </div>
+
+        <ButtonGroup>
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button 
+            variant="primary" 
+            onClick={handleLoad}
+            disabled={!selectedFiles}
+          >
+            Import Z Directory
+          </Button>
+        </ButtonGroup>
+      </DialogContainer>
+    </DialogOverlay>
   );
 };
