@@ -1,0 +1,646 @@
+// Integrated App.tsx that combines launcher with dual-pane interface
+// File: packages/client/src/App.tsx
+
+import React, { useState } from 'react';
+import styled from 'styled-components';
+import { ZZSpace, createKrebsCycleDemo } from '@zigzag/core'; // Your existing imports
+import { useDualPaneNavigation } from './hooks/useDualPaneNavigation'; // New hook
+
+// Import your existing components
+// import { ZigZagSpace } from './components/ZigZagSpace';
+// import { ZZCellComponent } from './components/ZZCellComponent';
+// import { RankView } from './components/views/RankView';
+
+// Types
+type ViewType = 'rank' | 'vanishing' | 'rowcol';
+type LaunchMode = 'demo' | 'blank' | 'load';
+
+interface ZZCursor {
+  cellId: string;
+  dimension: string;
+  viewType: ViewType;
+}
+
+interface DualPaneState {
+  space: ZZSpace;
+  greenCursor: ZZCursor;
+  blueCursor: ZZCursor;
+  leftPane: { dimensions: [string, string, string]; viewType: ViewType };
+  rightPane: { dimensions: [string, string, string]; viewType: ViewType };
+  activePanePane: 'left' | 'right';
+  markedCells: Set<string>;
+}
+
+// Styled Components
+const AppContainer = styled.div`
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #1a1a1a;
+  font-family: 'Courier New', monospace;
+  color: #fff;
+`;
+
+const DualPaneHeader = styled.header`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 20px;
+  background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+  border-bottom: 2px solid #444;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+`;
+
+const HeaderLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 20px;
+`;
+
+const BackButton = styled.button`
+  padding: 8px 16px;
+  background: #444;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #555;
+  }
+`;
+
+const Title = styled.h1`
+  color: #00ff00;
+  font-size: 24px;
+  font-weight: 300;
+  margin: 0;
+  text-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+`;
+
+const PhaseIndicator = styled.div`
+  background: rgba(0, 255, 0, 0.1);
+  border: 1px solid #00ff00;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: #00ff00;
+`;
+
+const StatusPanel = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-size: 14px;
+`;
+
+const StatusItem = styled.div<{ $color?: string }>`
+  color: ${props => props.$color || '#999'};
+  
+  strong {
+    color: ${props => props.$color || '#fff'};
+  }
+`;
+
+const PaneContainer = styled.div`
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+`;
+
+const Pane = styled.div<{ $cursorType: 'green' | 'blue'; $isActive: boolean }>`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: ${props => props.$cursorType === 'green' 
+    ? 'linear-gradient(135deg, #0f1f0f 0%, #1a2a1a 100%)' 
+    : 'linear-gradient(135deg, #0f0f1f 0%, #1a1a2a 100%)'
+  };
+  border-right: 2px solid ${props => props.$cursorType === 'green' ? '#00ff00' : '#0088ff'};
+  position: relative;
+  
+  ${props => props.$isActive && `
+    box-shadow: inset 0 0 30px ${props.$cursorType === 'green' ? 'rgba(0, 255, 0, 0.15)' : 'rgba(0, 136, 255, 0.15)'};
+  `}
+`;
+
+const PaneHeader = styled.div<{ $cursorType: 'green' | 'blue' }>`
+  padding: 12px 20px;
+  background: ${props => props.$cursorType === 'green' 
+    ? 'linear-gradient(135deg, #1a3a1a 0%, #2a4a2a 100%)' 
+    : 'linear-gradient(135deg, #1a1a3a 0%, #2a2a4a 100%)'
+  };
+  border-bottom: 2px solid ${props => props.$cursorType === 'green' ? '#00ff00' : '#0088ff'};
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+`;
+
+const CursorInfo = styled.div<{ $cursorType: 'green' | 'blue' }>`
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  
+  .cursor-type {
+    font-weight: bold;
+    font-size: 16px;
+    color: ${props => props.$cursorType === 'green' ? '#00ff00' : '#0088ff'};
+    text-shadow: 0 0 5px ${props => props.$cursorType === 'green' ? 'rgba(0, 255, 0, 0.5)' : 'rgba(0, 136, 255, 0.5)'};
+  }
+  
+  .cursor-role {
+    font-size: 12px;
+    color: #999;
+    opacity: 0.8;
+  }
+`;
+
+const DimensionDisplay = styled.div<{ $cursorType: 'green' | 'blue' }>`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  
+  .dimension-label {
+    color: #666;
+  }
+  
+  .dimensions {
+    font-family: monospace;
+    color: ${props => props.$cursorType === 'green' ? '#00ff00' : '#0088ff'};
+    font-weight: bold;
+  }
+  
+  .view-type {
+    color: #999;
+    margin-left: 10px;
+  }
+`;
+
+const ViewArea = styled.div`
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+`;
+
+const KeyboardHints = styled.div<{ $cursorType: 'green' | 'blue' }>`
+  position: absolute;
+  bottom: 15px;
+  right: 15px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid ${props => props.$cursorType === 'green' ? '#00ff00' : '#0088ff'};
+  border-radius: 6px;
+  padding: 10px 15px;
+  font-size: 11px;
+  color: #999;
+  max-width: 200px;
+  
+  .hint-title {
+    color: ${props => props.$cursorType === 'green' ? '#00ff00' : '#0088ff'};
+    font-weight: bold;
+    margin-bottom: 5px;
+  }
+  
+  .hint-line {
+    margin: 2px 0;
+    font-family: monospace;
+  }
+`;
+
+const Splitter = styled.div`
+  width: 4px;
+  background: linear-gradient(to bottom, #444 0%, #666 50%, #444 100%);
+  cursor: col-resize;
+  position: relative;
+  transition: background 0.2s ease;
+  
+  &:hover {
+    background: linear-gradient(to bottom, #666 0%, #888 50%, #666 100%);
+  }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 60px;
+    background: rgba(102, 102, 102, 0.8);
+    border-radius: 10px;
+    border: 1px solid #888;
+  }
+`;
+
+// Integrated ZigZag Pane Component
+const IntegratedZigZagPane: React.FC<{
+  cursorType: 'green' | 'blue';
+  isActive: boolean;
+  cursor: ZZCursor;
+  paneState: { dimensions: [string, string, string]; viewType: ViewType };
+  space: ZZSpace;
+  markedCells: Set<string>;
+  onCursorChange: (cursor: ZZCursor) => void;
+  onPaneActivate: () => void;
+}> = ({ cursorType, isActive, cursor, paneState, space, markedCells, onCursorChange, onPaneActivate }) => {
+  
+  // This would integrate with your existing ZigZagSpace component
+  // For now, showing a placeholder that demonstrates the integration points
+  
+  return (
+    <Pane $cursorType={cursorType} $isActive={isActive} onClick={onPaneActivate}>
+      <PaneHeader $cursorType={cursorType}>
+        <CursorInfo $cursorType={cursorType}>
+          <div className="cursor-type">{cursorType.toUpperCase()} CURSOR</div>
+          <div className="cursor-role">
+            {cursorType === 'green' ? 'Commands & Applitudes' : 'Data Editing'}
+          </div>
+        </CursorInfo>
+        
+        <DimensionDisplay $cursorType={cursorType}>
+          <span className="dimension-label">Dimensions:</span>
+          <span className="dimensions">
+            {paneState.dimensions[0]} {paneState.dimensions[1]} {paneState.dimensions[2]}
+          </span>
+          <span className="view-type">{paneState.viewType}</span>
+        </DimensionDisplay>
+      </PaneHeader>
+      
+      <ViewArea>
+        {/* This is where you would integrate your existing components:
+        
+        <ZigZagSpace 
+          space={space}
+          cursor={cursor}
+          onCursorChange={onCursorChange}
+          viewType={paneState.viewType}
+          dimensions={paneState.dimensions}
+          markedCells={markedCells}
+          cursorType={cursorType}
+        />
+        
+        */}
+        
+        {/* Placeholder showing integration concept */}
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '100%',
+          flexDirection: 'column',
+          gap: '20px'
+        }}>
+          <div style={{ 
+            color: cursorType === 'green' ? '#00ff00' : '#0088ff',
+            fontSize: '24px',
+            fontWeight: 'bold'
+          }}>
+            {cursorType.toUpperCase()} PANE
+          </div>
+          
+          <div style={{ color: '#999', textAlign: 'center' }}>
+            <div>Current Cell: <strong style={{ color: '#fff' }}>{space.getCell(cursor.cellId)?.text || cursor.cellId}</strong></div>
+            <div>Dimension: <strong style={{ color: '#fff' }}>{cursor.dimension}</strong></div>
+            <div>View: <strong style={{ color: '#fff' }}>{paneState.viewType}</strong></div>
+            <div>Marked Cells: <strong style={{ color: '#ffff00' }}>{markedCells.size}</strong></div>
+          </div>
+          
+          <div style={{ 
+            color: '#666', 
+            fontSize: '14px', 
+            textAlign: 'center',
+            maxWidth: '400px'
+          }}>
+            Integrate your existing ZigZagSpace, RankView, VanishingView, and RowColView components here.
+            The dual-pane system provides the cursor management and keyboard navigation.
+          </div>
+        </div>
+        
+        <KeyboardHints $cursorType={cursorType}>
+          <div className="hint-title">Keyboard Controls</div>
+          {cursorType === 'green' ? (
+            <>
+              <div className="hint-line">esfc - Navigate</div>
+              <div className="hint-line">XYZ - Rotate dims</div>
+              <div className="hint-line">V - Switch view</div>
+              <div className="hint-line">~ - Swap cursors</div>
+            </>
+          ) : (
+            <>
+              <div className="hint-line">ijl, - Navigate</div>
+              <div className="hint-line">xyz - Rotate dims</div>
+              <div className="hint-line">v - Switch view</div>
+              <div className="hint-line">Tab - Edit text</div>
+            </>
+          )}
+          <div className="hint-line">n+dir - New cell</div>
+          <div className="hint-line">m - Mark cell</div>
+          <div className="hint-line">ESC - Home</div>
+        </KeyboardHints>
+      </ViewArea>
+    </Pane>
+  );
+};
+
+// Main Dual-Pane ZigZag Component
+const DualPaneZigZag: React.FC<{ 
+  mode: LaunchMode; 
+  space: ZZSpace;
+  onBack: () => void; 
+}> = ({ mode, space, onBack }) => {
+  const [state, setState] = useState<DualPaneState>(() => ({
+    space,
+    greenCursor: {
+      cellId: space.getHomeCell().id,
+      dimension: mode === 'demo' ? 'd.krebs' : 'd.1',
+      viewType: 'rank'
+    },
+    blueCursor: {
+      cellId: space.getHomeCell().id,
+      dimension: mode === 'demo' ? 'd.krebs' : 'd.1',
+      viewType: 'rank'
+    },
+    leftPane: {
+      dimensions: ['d.1', 'd.2', 'd.3'],
+      viewType: 'rank'
+    },
+    rightPane: {
+      dimensions: ['d.1', 'd.2', 'd.3'],
+      viewType: 'rank'
+    },
+    activePanePane: 'right',
+    markedCells: new Set()
+  }));
+
+  // Use the enhanced keyboard navigation hook
+  const navigation = useDualPaneNavigation({ state, setState });
+
+  const handleGreenCursorChange = (cursor: ZZCursor) => {
+    setState(prev => ({ ...prev, greenCursor: cursor, activePanePane: 'left' }));
+  };
+
+  const handleBlueCursorChange = (cursor: ZZCursor) => {
+    setState(prev => ({ ...prev, blueCursor: cursor, activePanePane: 'right' }));
+  };
+
+  return (
+    <AppContainer>
+      <DualPaneHeader>
+        <HeaderLeft>
+          <BackButton onClick={onBack}>← Launcher</BackButton>
+          <Title>GZigZag Dual-Pane Interface</Title>
+          <PhaseIndicator>Phase 3B</PhaseIndicator>
+        </HeaderLeft>
+        
+        <StatusPanel>
+          <StatusItem $color={state.activePanePane === 'left' ? '#00ff00' : '#666'}>
+            <strong>GREEN:</strong> {space.getCell(state.greenCursor.cellId)?.text || 'Unknown'}
+          </StatusItem>
+          <StatusItem $color={state.activePanePane === 'right' ? '#0088ff' : '#666'}>
+            <strong>BLUE:</strong> {space.getCell(state.blueCursor.cellId)?.text || 'Unknown'}
+          </StatusItem>
+          <StatusItem $color="#ffff00">
+            <strong>MARKED:</strong> {state.markedCells.size}
+          </StatusItem>
+          <StatusItem>
+            <strong>MODE:</strong> {mode === 'demo' ? 'Krebs Demo' : mode === 'blank' ? 'Blank Space' : 'Loaded File'}
+          </StatusItem>
+        </StatusPanel>
+      </DualPaneHeader>
+
+      <PaneContainer>
+        <IntegratedZigZagPane
+          cursorType="green"
+          isActive={state.activePanePane === 'left'}
+          cursor={state.greenCursor}
+          paneState={state.leftPane}
+          space={state.space}
+          markedCells={state.markedCells}
+          onCursorChange={handleGreenCursorChange}
+          onPaneActivate={() => setState(prev => ({ ...prev, activePanePane: 'left' }))}
+        />
+        
+        <Splitter />
+        
+        <IntegratedZigZagPane
+          cursorType="blue"
+          isActive={state.activePanePane === 'right'}
+          cursor={state.blueCursor}
+          paneState={state.rightPane}
+          space={state.space}
+          markedCells={state.markedCells}
+          onCursorChange={handleBlueCursorChange}
+          onPaneActivate={() => setState(prev => ({ ...prev, activePanePane: 'right' }))}
+        />
+      </PaneContainer>
+    </AppContainer>
+  );
+};
+
+// Enhanced Launcher Component
+const EnhancedLauncher: React.FC<{ onLaunch: (mode: LaunchMode, space: ZZSpace) => void }> = ({ onLaunch }) => {
+  const [selectedOption, setSelectedOption] = useState<LaunchMode | null>(null);
+
+  const options = [
+    {
+      id: 'demo' as LaunchMode,
+      title: 'Krebs Cycle Demo',
+      description: 'Biochemistry demonstration with dual-pane navigation and multi-dimensional connections',
+      icon: '🧬',
+      status: 'Ready for dual-pane interface'
+    },
+    {
+      id: 'blank' as LaunchMode,
+      title: 'Blank ZigZag Space',
+      description: 'Start with empty space, perfect for testing dual-cursor operations and cell creation',
+      icon: '📄',
+      status: 'Ready for dual-pane interface'
+    },
+    {
+      id: 'load' as LaunchMode,
+      title: 'Load Z Directory',
+      description: 'Load original GzigZag files into the dual-pane interface (Phase 3A integration)',
+      icon: '📁',
+      status: 'Phase 3A + 3B Integration'
+    }
+  ];
+
+  const handleLaunch = () => {
+    if (!selectedOption) return;
+    
+    let space: ZZSpace;
+    
+    switch (selectedOption) {
+      case 'demo':
+        space = createKrebsCycleDemo();
+        break;
+      case 'blank':
+        space = { // Mock blank space - replace with your createBlankSpace()
+          getHomeCell: () => ({ id: 'home', text: 'HOME', step: () => null }),
+          getCell: (id) => ({ id, text: `Cell ${id}`, step: () => null }),
+          getDimensions: () => ['d.1', 'd.2', 'd.3'],
+          getCells: () => []
+        };
+        break;
+      case 'load':
+        // This would integrate with your file loading system
+        space = createKrebsCycleDemo(); // Fallback for demo
+        break;
+      default:
+        return;
+    }
+    
+    onLaunch(selectedOption, space);
+  };
+
+  return (
+    <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
+      fontFamily: 'system-ui, -apple-system, sans-serif'
+    }}>
+      <div style={{
+        background: '#2a2a2a',
+        borderRadius: '12px',
+        padding: '40px',
+        width: '90%',
+        maxWidth: '700px',
+        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)'
+      }}>
+        <header style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <h1 style={{ 
+            fontSize: '36px', 
+            fontWeight: '300', 
+            color: '#00ff00', 
+            margin: '0 0 10px 0',
+            textShadow: '0 0 20px rgba(0, 255, 0, 0.3)'
+          }}>
+            GZigZag Dual-Pane
+          </h1>
+          <p style={{ fontSize: '16px', color: '#999', margin: '0' }}>
+            Phase 3B: Original GzigZag Two-Window Interface
+          </p>
+        </header>
+
+        <div style={{ marginBottom: '30px' }}>
+          {options.map(option => (
+            <div
+              key={option.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '20px',
+                margin: '15px 0',
+                background: selectedOption === option.id ? '#3a3a3a' : '#333',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                border: `2px solid ${selectedOption === option.id ? '#00ff00' : 'transparent'}`,
+                transition: 'all 0.3s ease',
+                position: 'relative'
+              }}
+              onClick={() => setSelectedOption(option.id)}
+            >
+              <div style={{ fontSize: '32px', marginRight: '20px' }}>{option.icon}</div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ margin: '0 0 5px 0', color: '#fff', fontSize: '18px' }}>
+                  {option.title}
+                </h3>
+                <p style={{ margin: '0 0 5px 0', fontSize: '14px', color: '#aaa', lineHeight: '1.4' }}>
+                  {option.description}
+                </p>
+                <div style={{ 
+                  fontSize: '12px', 
+                  color: '#00ff00',
+                  fontWeight: 'bold'
+                }}>
+                  {option.status}
+                </div>
+              </div>
+              {selectedOption === option.id && (
+                <div style={{
+                  position: 'absolute',
+                  right: '20px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: '#00ff00',
+                  fontSize: '24px',
+                  fontWeight: 'bold'
+                }}>
+                  ✓
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {selectedOption && (
+          <button
+            onClick={handleLaunch}
+            style={{
+              width: '100%',
+              padding: '15px',
+              fontSize: '18px',
+              fontWeight: '500',
+              color: '#000',
+              background: '#00ff00',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              boxShadow: '0 0 20px rgba(0, 255, 0, 0.3)'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.background = '#00dd00'}
+            onMouseOut={(e) => e.currentTarget.style.background = '#00ff00'}
+          >
+            Launch Dual-Pane ZigZag
+          </button>
+        )}
+
+        <footer style={{
+          textAlign: 'center',
+          marginTop: '30px',
+          paddingTop: '20px',
+          borderTop: '1px solid #444'
+        }}>
+          <p style={{ fontSize: '12px', color: '#666', margin: '0 0 5px 0' }}>
+            Original concept by Ted Nelson • Modernization by Adam Vials Moore
+          </p>
+          <p style={{ fontSize: '12px', color: '#00ff00', margin: 0 }}>
+            Ready for integration with your existing ZigZag components
+          </p>
+        </footer>
+      </div>
+    </div>
+  );
+};
+
+// Main App Component
+export default function App() {
+  const [launched, setLaunched] = useState(false);
+  const [mode, setMode] = useState<LaunchMode>('demo');
+  const [space, setSpace] = useState<ZZSpace | null>(null);
+
+  const handleLaunch = (selectedMode: LaunchMode, selectedSpace: ZZSpace) => {
+    setMode(selectedMode);
+    setSpace(selectedSpace);
+    setLaunched(true);
+  };
+
+  const handleBack = () => {
+    setLaunched(false);
+    setSpace(null);
+  };
+
+  if (!launched || !space) {
+    return <EnhancedLauncher onLaunch={handleLaunch} />;
+  }
+
+  return <DualPaneZigZag mode={mode} space={space} onBack={handleBack} />;
+}

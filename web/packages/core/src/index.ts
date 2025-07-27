@@ -5,6 +5,8 @@ export type CellId = string;
 export type DimensionName = string;
 export type Direction = 1 | -1;
 
+export * from './io';
+
 export class ZigZagError extends Error {
   constructor(message: string) {
     super(message);
@@ -217,6 +219,11 @@ export class ZZSpace {
   private generateSpaceId(): string {
     return `space_${Math.random().toString(36).substr(2, 9)}`;
   }
+
+  setHomeCell(cell: ZZCell): void {
+    this.homeCell = cell;
+  }
+
 }
 
 // BIOCHEMISTRY DEMO (Your YouTube demo recreation!)

@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { ZZSpace } from '@zigzag/core';
+import { FileLoadDialog } from '../file';
 import './Launcher.css';
 
 interface LaunchOption {
@@ -9,10 +11,12 @@ interface LaunchOption {
 }
 
 interface LauncherProps {
-  onLaunch: (mode: 'demo' | 'blank') => void;
+  onLaunchDemo: () => void;
+  onLaunchBlank: () => void;
+  onFileLoad: (loadedSpace: ZZSpace) => void;
 }
 
-export const Launcher: React.FC<LauncherProps> = ({ onLaunch }) => {
+export const Launcher: React.FC<LauncherProps> = ({ onLaunchDemo, onLaunchBlank, onFileLoad }) => {
   const [selectedOption, setSelectedOption] = useState<LaunchOption['id'] | null>(null);
   const [showFileDialog, setShowFileDialog] = useState(false);
 
@@ -32,22 +36,41 @@ export const Launcher: React.FC<LauncherProps> = ({ onLaunch }) => {
     {
       id: 'load',
       title: 'Load Z Directory',
-      description: 'Load an original GzigZag file from a Z directory structure (Phase 3 feature - coming soon)',
+      description: 'Load an original GzigZag file from a Z directory structure (Drag & drop Z folders)',
       icon: '📁'
     }
   ];
 
   const handleOptionClick = (optionId: LaunchOption['id']) => {
+    setSelectedOption(optionId);
     if (optionId === 'load') {
       setShowFileDialog(true);
-    } else {
-      setSelectedOption(optionId);
     }
   };
 
   const handleLaunch = () => {
-    if (selectedOption && selectedOption !== 'load') {
-      onLaunch(selectedOption);
+    if (selectedOption === 'demo') {
+      onLaunchDemo();
+    } else if (selectedOption === 'blank') {
+      onLaunchBlank();
+    } else if (selectedOption === 'load') {
+      setShowFileDialog(true);
+    }
+  };
+
+  const handleFileLoad = async (files: FileList) => {
+    try {
+      // TODO: Implement actual file loading from the core module
+      // For now, create a blank space as a placeholder
+      console.log('Loading files:', Array.from(files).map(f => f.name));
+      
+      // This would be replaced with actual file loading logic
+      // const loadedSpace = await loadGZZFiles(files);
+      
+      // For now, create a demo space to show that it works
+      onLaunchDemo(); // Temporary - replace with onFileLoad(loadedSpace)
+    } catch (error) {
+      console.error('Failed to load files:', error);
     }
   };
 
@@ -65,7 +88,7 @@ export const Launcher: React.FC<LauncherProps> = ({ onLaunch }) => {
           {options.map(option => (
             <div
               key={option.id}
-              className={`launcher-option ${selectedOption === option.id ? 'selected' : ''} ${option.id === 'load' ? 'disabled' : ''}`}
+              className={`launcher-option ${selectedOption === option.id ? 'selected' : ''}`}
               onClick={() => handleOptionClick(option.id)}
             >
               <div className="launcher-option-icon">{option.icon}</div>
@@ -80,9 +103,9 @@ export const Launcher: React.FC<LauncherProps> = ({ onLaunch }) => {
           ))}
         </div>
 
-        {selectedOption && selectedOption !== 'load' && (
+        {selectedOption && (
           <button className="launcher-button" onClick={handleLaunch}>
-            Launch ZigZag
+            {selectedOption === 'load' ? 'Browse Files' : 'Launch ZigZag'}
           </button>
         )}
 
@@ -95,18 +118,10 @@ export const Launcher: React.FC<LauncherProps> = ({ onLaunch }) => {
       </div>
 
       {showFileDialog && (
-        <div className="launcher-modal">
-          <div className="launcher-modal-content">
-            <h2>Load Z Directory</h2>
-            <p>This feature will allow loading original GzigZag file structures.</p>
-            <p className="launcher-coming-soon">Coming in Phase 3A.1</p>
-            <div className="launcher-modal-buttons">
-              <button onClick={() => setShowFileDialog(false)} className="launcher-cancel-button">
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
+        <FileLoadDialog
+          onLoad={handleFileLoad}
+          onCancel={() => setShowFileDialog(false)}
+        />
       )}
     </div>
   );
