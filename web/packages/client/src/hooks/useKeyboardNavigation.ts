@@ -1,7 +1,6 @@
-import { useEffect } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { ZZSpace } from '@zigzag/core';
-import { ZZCursor } from '../App';
+import type { ZZCursor } from '../App';
 
 export const useKeyboardNavigation = (
   space: ZZSpace,

@@ -310,6 +310,119 @@ function runDemo(): void {
   console.log('\n🎉 Success! ZigZag is working - "locally rational, globally paradoxical"');
 }
 
+// BLANK SPACE CREATION
+
+/**
+ * Standard ZigZag dimensions as per original GzigZag
+ */
+export const STANDARD_DIMENSIONS = [
+  'd.1',      // Primary horizontal dimension
+  'd.2',      // Primary vertical dimension  
+  'd.3',      // Primary depth dimension
+  'd.clone',  // Clone relationships
+  'd.cursor', // Cursor positions
+  'd.mark',   // Marked cells
+] as const;
+
+/**
+ * System dimensions used internally
+ */
+export const SYSTEM_DIMENSIONS = [
+  'd.system',       // System cells
+  'd.dims',         // Dimension list
+  'd.cursor-cargo', // Cursor cargo connections
+  'd.cellcreation', // Cell creation tracking
+] as const;
+
+/**
+ * Creates a blank ZigZag space with standard dimensions
+ * This matches the original GzigZag startup configuration
+ */
+export function createBlankSpace(): ZZSpace {
+  const space = new ZZSpace('blank_space');
+  
+  // Get the automatically created home cell
+  const homeCell = space.getHomeCell();
+  homeCell.text = 'HOME';
+
+  // Register standard dimensions first
+  [...STANDARD_DIMENSIONS, ...SYSTEM_DIMENSIONS].forEach(dimName => {
+    space.registerDimension(dimName);
+  });
+
+  // Create dimension list structure (following original GzigZag pattern)
+  const dimListLabel = new ZZCell(space, 'DimLists');
+  const dimList = new ZZCell(space, ''); // Empty cell as list head
+  
+  // Connect dimension structure
+  homeCell.connect('d.2', dimListLabel);
+  dimListLabel.connect('d.1', dimList);
+
+  // Add standard dimensions to the dimension list
+  let prevDimCell: ZZCell | null = null;
+  
+  [...STANDARD_DIMENSIONS, ...SYSTEM_DIMENSIONS].forEach(dimName => {
+    const dimCell = new ZZCell(space, dimName);
+    space.registerDimension(dimName);
+    
+    if (prevDimCell) {
+      prevDimCell.connect('d.2', dimCell);
+    } else {
+      dimList.connect('d.2', dimCell);
+    }
+    prevDimCell = dimCell;
+  });
+
+  // Create Actions list structure
+  const actionsLabel = new ZZCell(space, 'Actions');
+  const actionsList = new ZZCell(space, ''); // Empty cell as list head
+  
+  dimListLabel.connect('d.2', actionsLabel);
+  actionsLabel.connect('d.1', actionsList);
+
+  // Create Views list structure  
+  const viewsLabel = new ZZCell(space, 'Views');
+  const viewsList = new ZZCell(space, ''); // Empty cell as list head
+  
+  actionsLabel.connect('d.2', viewsLabel);
+  viewsLabel.connect('d.1', viewsList);
+
+  // Add basic views (following original GzigZag)
+  const vanishingView = new ZZCell(space, 'Vanishing');
+  const rowView = new ZZCell(space, 'Row'); 
+  const columnView = new ZZCell(space, 'Column');
+  
+  viewsList.connect('d.2', vanishingView);
+  vanishingView.connect('d.2', rowView);
+  rowView.connect('d.2', columnView);
+
+  // Create Bindings list structure
+  const bindingsLabel = new ZZCell(space, 'Bindings');
+  const bindingsList = new ZZCell(space, 'Normal mode');
+  
+  viewsLabel.connect('d.2', bindingsLabel);
+  bindingsLabel.connect('d.1', bindingsList);
+
+  // Create basic cursor
+  const cursor1 = new ZZCell(space, 'Cursor-1');
+  homeCell.connect('d.cursor', cursor1);
+
+  // Create some basic cells connected on d.1 to ensure navigation works
+  // This follows the original GzigZag pattern of having some cells to start with
+  const cell1 = homeCell.newCell('d.1', 1, 'Cell 1');
+  const cell2 = cell1.newCell('d.1', 1, 'Cell 2');
+  const cell3 = cell2.newCell('d.1', 1, 'Cell 3');
+
+  return space;
+}
+
+/**
+ * Creates a new cell in the space - helper for cleaner code
+ */
+export function createCell(space: ZZSpace, text: string = ''): ZZCell {
+  return new ZZCell(space, text);
+}
+
 // Run the demo if not in a module environment
 if (typeof module !== 'undefined') {
   runDemo();

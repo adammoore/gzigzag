@@ -1,0 +1,227 @@
+/* Launcher Component Styles */
+
+.launcher-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.launcher-box {
+  background: #2a2a2a;
+  border-radius: 12px;
+  padding: 40px;
+  width: 90%;
+  max-width: 600px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.launcher-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.launcher-title {
+  font-size: 36px;
+  font-weight: 300;
+  color: #00ff00;
+  margin: 0 0 10px 0;
+  letter-spacing: 2px;
+}
+
+.launcher-subtitle {
+  font-size: 16px;
+  color: #999;
+  margin: 0;
+}
+
+.launcher-options {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.launcher-option {
+  display: flex;
+  align-items: center;
+  padding: 20px;
+  background: #333;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  position: relative;
+}
+
+.launcher-option:hover:not(.disabled) {
+  background: #3a3a3a;
+}
+
+.launcher-option.selected {
+  border-color: #00ff00;
+  background: #3a3a3a;
+}
+
+.launcher-option.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.launcher-option-icon {
+  font-size: 32px;
+  margin-right: 20px;
+}
+
+.launcher-option-content {
+  flex: 1;
+}
+
+.launcher-option-title {
+  font-size: 18px;
+  font-weight: 500;
+  color: #fff;
+  margin: 0 0 5px 0;
+}
+
+.launcher-option-description {
+  font-size: 14px;
+  color: #aaa;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.launcher-checkmark {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #00ff00;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.launcher-button {
+  width: 100%;
+  padding: 15px;
+  font-size: 18px;
+  font-weight: 500;
+  color: #000;
+  background: #00ff00;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.launcher-button:hover {
+  background: #00dd00;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 255, 0, 0.3);
+}
+
+.launcher-button:active {
+  transform: translateY(0);
+}
+
+.launcher-footer {
+  text-align: center;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #444;
+}
+
+.launcher-copyright {
+  font-size: 12px;
+  color: #666;
+  margin: 0 0 5px 0;
+}
+
+.launcher-phase {
+  font-size: 12px;
+  color: #00ff00;
+  margin: 0;
+}
+
+/* Modal Styles */
+.launcher-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.launcher-modal-content {
+  background: #2a2a2a;
+  padding: 30px;
+  border-radius: 12px;
+  max-width: 400px;
+  color: #fff;
+}
+
+.launcher-modal-content h2 {
+  margin-top: 0;
+  color: #00ff00;
+}
+
+.launcher-coming-soon {
+  color: #00ff00;
+  font-style: italic;
+  margin-top: 20px;
+}
+
+.launcher-modal-buttons {
+  margin-top: 30px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.launcher-cancel-button {
+  padding: 10px 20px;
+  background: #444;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.launcher-cancel-button:hover {
+  background: #555;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .launcher-box {
+    padding: 30px 20px;
+  }
+  
+  .launcher-title {
+    font-size: 28px;
+  }
+  
+  .launcher-option {
+    padding: 15px;
+  }
+  
+  .launcher-option-icon {
+    font-size: 28px;
+    margin-right: 15px;
+  }
+  
+  .launcher-option-title {
+    font-size: 16px;
+  }
+  
+  .launcher-option-description {
+    font-size: 13px;
+  }
+}

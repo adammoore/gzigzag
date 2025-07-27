@@ -13,7 +13,7 @@
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "@zigzag/core": "workspace:*",
+    "@zigzag/core": "file:../core",
     "three": "^0.158.0",
     "@react-three/fiber": "^8.15.0",
     "@react-three/drei": "^9.88.0",

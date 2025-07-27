@@ -16,9 +16,11 @@
     "packages/client"
   ],
   "scripts": {
+    "dev": "cd packages/client && npm run dev",
     "demo": "cd packages/core && npm run dev",
     "build": "cd packages/core && npm run build",
-    "test": "cd packages/core && npm test"
+    "test": "cd packages/core && npm test",
+    "install:all": "npm install && cd packages/core && npm install && cd ../client && npm install"
   },
   "devDependencies": {
     "@types/node": "^20.6.0",
