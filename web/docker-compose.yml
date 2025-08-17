@@ -1,0 +1,140 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: zigzag-postgres
+    environment:
+      POSTGRES_DB: zigzag
+      POSTGRES_USER: zigzag_user
+      POSTGRES_PASSWORD: zigzag_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zigzag_user -d zigzag"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Neo4j Graph Database
+  neo4j:
+    image: neo4j:5-community
+    container_name: zigzag-neo4j
+    environment:
+      NEO4J_AUTH: neo4j/zigzag_password
+      NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_dbms_memory_pagecache_size: 512M
+      NEO4J_dbms_memory_heap_max__size: 512M
+    ports:
+      - "7474:7474"  # Neo4j Browser
+      - "7687:7687"  # Bolt protocol
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p zigzag_password 'RETURN 1'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: zigzag-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Node.js API Server (Development)
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: zigzag-server
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DATABASE_URL: postgresql://zigzag_user:zigzag_password@postgres:5432/zigzag
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: zigzag_password
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: development-secret-change-in-production
+      FRONTEND_URL: http://localhost:3000
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./packages/server:/app/packages/server
+      - ./packages/core:/app/packages/core
+      - /app/node_modules
+      - /app/packages/server/node_modules
+      - /app/packages/core/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: npm run dev -w @zigzag/server
+
+  # React Frontend (Development)
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: zigzag-client
+    environment:
+      VITE_API_URL: http://localhost:3001/api
+      VITE_WS_URL: ws://localhost:3001/ws
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./packages/client:/app/packages/client
+      - ./packages/core:/app/packages/core
+      - /app/node_modules
+      - /app/packages/client/node_modules
+      - /app/packages/core/node_modules
+    depends_on:
+      - server
+    command: npm run dev -w @zigzag/client
+
+  # pgAdmin for PostgreSQL management (optional)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: zigzag-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@zigzag.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    profiles:
+      - tools
+
+volumes:
+  postgres_data:
+  neo4j_data:
+  neo4j_logs:
+  redis_data:
+  pgadmin_data:
+
+networks:
+  default:
+    name: zigzag-network
+    driver: bridge

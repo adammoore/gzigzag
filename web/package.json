@@ -1,30 +1,96 @@
 {
   "name": "zigzag-web",
-  "version": "1.0.0",
-  "description": "Modern web implementation of Ted Nelson's ZigZag hyperthogonal structure",
-  "author": "Adam Vials Moore",
-  "license": "LGPL-2.1-or-later OR XPL-1.0",
-  "copyright": "Copyright (c) Ted Nelson and Adam Vials Moore",
-  "keywords": ["zigzag", "hypertext", "ted-nelson", "hyperthogonal", "data-structure"],
-  "homepage": "https://github.com/adammoore/gzigzag",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/adammoore/gzigzag.git"
-  },
+  "version": "4.0.0",
+  "description": "Modern web implementation of Ted Nelson's ZigZag hyperdimensional data structure",
+  "private": true,
   "workspaces": [
-    "packages/core",
-    "packages/client"
+    "packages/*"
   ],
   "scripts": {
-    "dev": "cd packages/client && npm run dev",
-    "demo": "cd packages/core && npm run dev",
-    "build": "cd packages/core && npm run build",
-    "test": "cd packages/core && npm test",
-    "install:all": "npm install && cd packages/core && npm install && cd ../client && npm install"
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "npm run dev -w @zigzag/server",
+    "dev:client": "npm run dev -w @zigzag/client",
+    "dev:docker": "docker-compose up -d && npm run dev",
+    "build": "npm run build:all",
+    "build:all": "npm run build:core && npm run build:server && npm run build:client",
+    "build:core": "npm run build -w @zigzag/core",
+    "build:server": "npm run build -w @zigzag/server",
+    "build:client": "npm run build -w @zigzag/client",
+    "start": "npm run start:prod",
+    "start:prod": "NODE_ENV=production npm run start -w @zigzag/server",
+    "start:dev": "npm run dev",
+    "migrate": "npm run migrate -w @zigzag/server",
+    "migrate:create": "npm run migrate:create -w @zigzag/server",
+    "migrate:rollback": "npm run migrate:rollback -w @zigzag/server",
+    "test": "npm test --workspaces",
+    "test:core": "npm test -w @zigzag/core",
+    "test:server": "npm test -w @zigzag/server",
+    "test:client": "npm test -w @zigzag/client",
+    "test:integration": "npm run test:integration -w @zigzag/server",
+    "test:e2e": "npm run test:e2e -w @zigzag/client",
+    "test:coverage": "npm run test:coverage --workspaces",
+    "lint": "npm run lint --workspaces",
+    "lint:fix": "npm run lint:fix --workspaces",
+    "format": "prettier --write \"packages/**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"packages/**/*.{ts,tsx,js,jsx,json,md}\"",
+    "typecheck": "npm run typecheck --workspaces",
+    "clean": "npm run clean --workspaces && rm -rf node_modules",
+    "clean:dist": "rm -rf packages/*/dist packages/*/build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:build": "docker build -t zigzag-web .",
+    "docker:run": "docker run -p 3001:3001 --env-file .env zigzag-web",
+    "deploy": "./deploy.sh",
+    "deploy:render": "git push origin main",
+    "backup:db": "npm run backup:db -w @zigzag/server",
+    "restore:db": "npm run restore:db -w @zigzag/server",
+    "seed": "npm run seed -w @zigzag/server",
+    "docs": "npm run docs --workspaces",
+    "docs:serve": "npm run docs:serve -w @zigzag/core",
+    "prepare": "husky install",
+    "postinstall": "npm run build:core"
   },
   "devDependencies": {
-    "@types/node": "^20.6.0",
-    "typescript": "^5.2.2",
-    "ts-node": "^10.9.1"
-  }
+    "@types/node": "^20.10.5",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.2",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.1.1",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=9.0.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/zigzag-web.git"
+  },
+  "keywords": [
+    "zigzag",
+    "hyperdimensional",
+    "ted-nelson",
+    "graph-database",
+    "neo4j",
+    "postgresql",
+    "websocket",
+    "collaboration"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
 }
