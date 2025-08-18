@@ -1,168 +1,156 @@
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import compression from 'compression';
-import rateLimit from 'express-rate-limit';
-import { createServer } from 'http';
-import { WebSocketServer } from 'ws';
-import dotenv from 'dotenv';
-import { logger } from './utils/logger';
-import { errorHandler } from './middleware/errorHandler';
-import { authMiddleware } from './middleware/auth';
-import { initPostgres } from './database/postgres';
-import { initNeo4j } from './database/neo4j';
-import { initRedis } from './database/redis';
+import { Pool, PoolClient } from 'pg';
+import { logger } from '../utils/logger';
 
-// Routes
-import authRoutes from './routes/auth';
-import spacesRoutes from './routes/spaces';
-import cellsRoutes from './routes/cells';
-import filesRoutes from './routes/files';
-import connectionsRoutes from './routes/connections';
+let pool: Pool;
 
-// WebSocket handlers
-import { setupWebSocket } from './websocket/handler';
-
-// Load environment variables
-dotenv.config();
-
-const app = express();
-const server = createServer(app);
-const wss = new WebSocketServer({ server });
-
-// Configuration
-const PORT = process.env.PORT || 3001;
-const NODE_ENV = process.env.NODE_ENV || 'development';
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
-
-// Security middleware
-app.use(helmet({
-  crossOriginEmbedderPolicy: false,
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      connectSrc: ["'self'", "ws:", "wss:"],
-      imgSrc: ["'self'", "data:", "blob:"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-    },
-  },
-}));
-
-// CORS configuration
-app.use(cors({
-  origin: [FRONTEND_URL],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
-
-// General middleware
-app.use(compression());
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.',
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-// Apply rate limiting to API routes
-app.use('/api', limiter);
-
-// Stricter rate limit for auth endpoints
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5, // Only 5 auth attempts per 15 minutes
-  skipSuccessfulRequests: true,
-});
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'healthy',
-    environment: NODE_ENV,
-    timestamp: new Date().toISOString(),
+export async function initPostgres(): Promise<void> {
+  const connectionString = process.env.DATABASE_URL || 
+    'postgresql://zigzag_user:zigzag_password@localhost:5432/zigzag';
+  
+  pool = new Pool({
+    connectionString,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
   });
-});
 
-// API Routes
-app.use('/api/auth', authLimiter, authRoutes);
-app.use('/api/spaces', authMiddleware, spacesRoutes);
-app.use('/api/cells', authMiddleware, cellsRoutes);
-app.use('/api/connections', authMiddleware, connectionsRoutes);
-app.use('/api/files', authMiddleware, filesRoutes);
-
-// Error handling middleware
-app.use(errorHandler);
-
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    error: 'Not Found',
-    message: 'The requested resource does not exist',
-  });
-});
-
-// Initialize databases and start server
-async function startServer() {
   try {
-    // Initialize database connections
-    logger.info('Initializing database connections...');
-    await initPostgres();
-    await initNeo4j();
-    await initRedis();
-    
-    // Setup WebSocket handling
-    setupWebSocket(wss);
-    
-    // Start server
-    server.listen(PORT, () => {
-      logger.info(`🚀 ZigZag Server running on port ${PORT} in ${NODE_ENV} mode`);
-      logger.info(`🌐 Frontend URL: ${FRONTEND_URL}`);
-      logger.info(`📊 Health check: http://localhost:${PORT}/health`);
-    });
+    const client = await pool.connect();
+    await client.query('SELECT NOW()');
+    client.release();
+    logger.info('✅ PostgreSQL connected successfully');
   } catch (error) {
-    logger.error('Failed to start server:', error);
-    process.exit(1);
+    logger.error('❌ PostgreSQL connection failed:', error);
+    throw error;
   }
 }
 
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  logger.info('SIGTERM signal received: closing HTTP server');
-  server.close(() => {
-    logger.info('HTTP server closed');
-  });
-  
-  // Close database connections
-  const { closePostgres } = await import('./database/postgres');
-  const { closeNeo4j } = await import('./database/neo4j');
-  const { closeRedis } = await import('./database/redis');
-  
-  await Promise.all([
-    closePostgres(),
-    closeNeo4j(),
-    closeRedis(),
-  ]);
-  
-  process.exit(0);
-});
+export async function closePostgres(): Promise<void> {
+  if (pool) {
+    await pool.end();
+    logger.info('PostgreSQL connection closed');
+  }
+}
 
-// Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
-  logger.error('Uncaught Exception:', error);
-  process.exit(1);
-});
+export function getPool(): Pool {
+  if (!pool) {
+    throw new Error('PostgreSQL pool not initialized');
+  }
+  return pool;
+}
 
-process.on('unhandledRejection', (reason, promise) => {
-  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1);
-});
+export async function withTransaction<T>(
+  callback: (client: PoolClient) => Promise<T>
+): Promise<T> {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await callback(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
 
-// Start the server
-startServer();
+export const queries = {
+  async getUserByEmail(email: string) {
+    const result = await pool.query(
+      'SELECT * FROM users WHERE email = $1 AND is_active = true',
+      [email]
+    );
+    return result.rows[0];
+  },
+  
+  async getUserById(id: string) {
+    const result = await pool.query(
+      'SELECT * FROM users WHERE id = $1 AND is_active = true',
+      [id]
+    );
+    return result.rows[0];
+  },
+  
+  async createUser(email: string, username: string, passwordHash: string) {
+    const result = await pool.query(
+      `INSERT INTO users (email, username, password_hash)
+       VALUES ($1, $2, $3)
+       RETURNING id, email, username, created_at`,
+      [email, username, passwordHash]
+    );
+    return result.rows[0];
+  },
+  
+  async createSpace(name: string, ownerId: string, description?: string) {
+    const result = await pool.query(
+      `INSERT INTO spaces (name, owner_id, description)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [name, ownerId, description]
+    );
+    return result.rows[0];
+  },
+  
+  async getSpacesByUser(userId: string) {
+    const result = await pool.query(
+      `SELECT s.* FROM spaces s
+       LEFT JOIN space_collaborators sc ON s.id = sc.space_id
+       WHERE s.owner_id = $1 OR sc.user_id = $1
+       ORDER BY s.updated_at DESC`,
+      [userId]
+    );
+    return result.rows;
+  },
+  
+  async createCell(spaceId: string, textContent: string, createdBy: string) {
+    const result = await pool.query(
+      `INSERT INTO cells (space_id, text_content, created_by)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [spaceId, textContent, createdBy]
+    );
+    return result.rows[0];
+  },
+  
+  async updateCell(cellId: string, textContent: string, userId: string) {
+    return withTransaction(async (client) => {
+      const current = await client.query(
+        'SELECT * FROM cells WHERE id = $1',
+        [cellId]
+      );
+      
+      if (current.rows.length === 0) {
+        throw new Error('Cell not found');
+      }
+      
+      const cell = current.rows[0];
+      
+      await client.query(
+        `INSERT INTO cell_history (cell_id, text_content, metadata, version, changed_by)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [cellId, cell.text_content, cell.metadata, cell.version, userId]
+      );
+      
+      const result = await client.query(
+        `UPDATE cells 
+         SET text_content = $1, version = version + 1, updated_at = NOW()
+         WHERE id = $2
+         RETURNING *`,
+        [textContent, cellId]
+      );
+      
+      return result.rows[0];
+    });
+  },
+  
+  async getCellsBySpace(spaceId: string) {
+    const result = await pool.query(
+      'SELECT * FROM cells WHERE space_id = $1 ORDER BY created_at',
+      [spaceId]
+    );
+    return result.rows;
+  },
+};

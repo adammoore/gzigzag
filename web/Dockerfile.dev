@@ -1,0 +1,29 @@
+# Development Dockerfile for ZigZag Web
+FROM node:20-alpine
+
+# Install dependencies for building native modules
+RUN apk add --no-cache python3 make g++ postgresql-client
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY packages/core/package*.json ./packages/core/
+COPY packages/server/package*.json ./packages/server/
+COPY packages/client/package*.json ./packages/client/
+
+# Install dependencies
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Build core package
+RUN npm run build -w @zigzag/core
+
+# Expose ports
+EXPOSE 3000 3001
+
+# Default command (overridden by docker-compose)
+CMD ["npm", "run", "dev"]
