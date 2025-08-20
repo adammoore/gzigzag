@@ -7,26 +7,28 @@
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
-    "dev:server": "npm run dev -w @zigzag/server",
-    "dev:client": "npm run dev -w @zigzag/client",
+    "dev:server": "cd packages/server && npm run dev",
+    "dev:client": "cd packages/client && npm run dev",
     "build:all": "npm run build:core && npm run build:server && npm run build:client",
-    "build:core": "npm run build -w @zigzag/core",
-    "build:server": "npm run build -w @zigzag/server",
-    "build:client": "npm run build -w @zigzag/client",
-    "start:prod": "NODE_ENV=production npm run start -w @zigzag/server",
-    "migrate": "npm run migrate -w @zigzag/server",
-    "test": "npm test --workspaces",
-    "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down",
-    "deploy": "./deploy.sh"
+    "build:core": "cd packages/core && npm run build",
+    "build:server": "cd packages/server && npm run build",
+    "build:client": "cd packages/client && npm run build",
+    "start:server": "cd packages/server && npm start",
+    "migrate": "cd packages/server && npx ts-node src/migrate.ts",
+    "test": "npm run test:core && npm run test:server && npm run test:client",
+    "test:core": "cd packages/core && npm test",
+    "test:server": "cd packages/server && npm test",
+    "test:client": "cd packages/client && npm test",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "setup": "npm install && npm run docker:up && sleep 5 && npm run migrate"
   },
   "devDependencies": {
-    "@types/uuid": "^10.0.0",
-    "concurrently": "^8.2.2",
-    "typescript": "^5.3.3"
+    "concurrently": "^8.2.2"
   },
   "engines": {
-    "node": ">=20.0.0",
+    "node": ">=18.0.0",
     "npm": ">=9.0.0"
   }
 }

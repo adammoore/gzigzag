@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ZigZag WebSocket Test</title>
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>ZigZag WebSocket Test</h1>
+    <div id="status">Connecting...</div>
+    <button id="joinSpace">Join Test Space</button>
+    <button id="sendUpdate">Send Cell Update</button>
+    <div id="messages"></div>
+    
+    <script>
+        const socket = io('http://localhost:3001');
+        const status = document.getElementById('status');
+        const messages = document.getElementById('messages');
+        
+        socket.on('connect', () => {
+            status.textContent = 'Connected: ' + socket.id;
+            addMessage('Connected to server');
+        });
+        
+        socket.on('disconnect', () => {
+            status.textContent = 'Disconnected';
+            addMessage('Disconnected from server');
+        });
+        
+        socket.on('cell:updated', (data) => {
+            addMessage('Cell updated: ' + JSON.stringify(data));
+        });
+        
+        socket.on('cell:created', (data) => {
+            addMessage('Cell created: ' + JSON.stringify(data));
+        });
+        
+        socket.on('connection:created', (data) => {
+            addMessage('Connection created: ' + JSON.stringify(data));
+        });
+        
+        document.getElementById('joinSpace').onclick = () => {
+            const spaceId = 'test-space-123';
+            socket.emit('join:space', spaceId);
+            addMessage('Joined space: ' + spaceId);
+        };
+        
+        document.getElementById('sendUpdate').onclick = () => {
+            socket.emit('cell:update', {
+                spaceId: 'test-space-123',
+                cellId: 'cell-456',
+                content: 'Updated content at ' + new Date().toISOString(),
+                metadata: { updated: true }
+            });
+            addMessage('Sent cell update');
+        };
+        
+        function addMessage(msg) {
+            const p = document.createElement('p');
+            p.textContent = new Date().toLocaleTimeString() + ': ' + msg;
+            messages.appendChild(p);
+        }
+    </script>
+</body>
+</html>
