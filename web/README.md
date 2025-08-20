@@ -1,21 +1,32 @@
-# ZigZag Web - Phase 4C: Production Cloud Deployment
+# ZigZag Web - Modern Implementation
 
-A modern web implementation of Ted Nelson's ZigZag hyperdimensional data structure, now ready for scalable cloud deployment with PostgreSQL, Neo4j, and real-time collaboration.
+## Overview
+Modern web implementation of Ted Nelson's ZigZag hyperdimensional data structure with real-time collaboration.
 
-## 🚀 Quick Start
+## Technology Stack
+- **Frontend**: React 18, TypeScript, Vite, TailwindCSS
+- **Backend**: Node.js, Express, Socket.io
+- **Databases**: PostgreSQL (primary), Neo4j (graph), Redis (cache)
+- **Deployment**: Render.com, Docker
 
-### Local Development
+## Local Development
 
+### Prerequisites
+- Node.js 18+
+- Docker Desktop
+- Git
+
+### Quick Start
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/zigzag-web.git
-cd zigzag-web
+# Clone repository
+git clone https://github.com/adammoore/gzigzag.git
+cd gzigzag/web
 
 # Install dependencies
 npm install
 
-# Start development environment with Docker
-docker-compose up -d
+# Start Docker containers
+docker compose up -d
 
 # Run database migrations
 npm run migrate
@@ -24,386 +35,195 @@ npm run migrate
 npm run dev
 ```
 
-**Access points:**
-- Frontend: http://localhost:3000
-- API: http://localhost:3001
-- Neo4j Browser: http://localhost:7474
-- PostgreSQL: localhost:5432
+### Available Scripts
+- `npm run dev` - Start both frontend and backend in dev mode
+- `npm run build:all` - Build all packages for production
+- `npm run migrate` - Run database migrations
+- `npm run docker:up` - Start Docker containers
+- `npm run docker:down` - Stop Docker containers
+- `npm run test` - Run all tests
 
-### Production Deployment
-
-```bash
-# Run the deployment script
-chmod +x deploy.sh
-./deploy.sh
-
-# Or deploy manually to Render.com
-npm run build:all
-git push origin main
-```
-
-## 📁 Project Structure
-
-```
-zigzag-web/
-├── packages/
-│   ├── core/                 # ZigZag core implementation
-│   │   ├── src/
-│   │   │   ├── ZigZagSpace.ts
-│   │   │   ├── Cell.ts
-│   │   │   └── Connection.ts
-│   │   └── package.json
-│   │
-│   ├── client/               # React web interface
-│   │   ├── src/
-│   │   │   ├── components/
-│   │   │   ├── hooks/
-│   │   │   └── App.tsx
-│   │   └── package.json
-│   │
-│   └── server/               # Node.js API server
-│       ├── src/
-│       │   ├── server.ts
-│       │   ├── routes/
-│       │   │   ├── auth.ts
-│       │   │   ├── spaces.ts
-│       │   │   ├── cells.ts
-│       │   │   └── connections.ts
-│       │   ├── database/
-│       │   │   ├── postgres.ts
-│       │   │   ├── neo4j.ts
-│       │   │   └── redis.ts
-│       │   ├── websocket/
-│       │   │   └── handler.ts
-│       │   └── middleware/
-│       └── package.json
-│
-├── render.yaml               # Render.com deployment config
-├── docker-compose.yml        # Local development setup
-├── Dockerfile               # Production container
-├── deploy.sh                # Deployment script
-└── README.md                # This file
-```
-
-## 🏗️ Architecture
-
-### Technology Stack
-
-**Backend:**
-- Node.js + Express.js - API server
-- PostgreSQL - Structured data & metadata
-- Neo4j - Graph relationships & dimensions
-- Redis - Caching & sessions
-- WebSocket - Real-time collaboration
-
-**Frontend:**
-- React 18 - UI framework
-- TypeScript - Type safety
-- Vite - Build tool
-- TailwindCSS - Styling
-
-**Infrastructure:**
-- Render.com - Cloud hosting
-- Neo4j AuraDB - Managed graph database
-- Docker - Containerization
-- GitHub Actions - CI/CD
-
-### Database Design
-
-**PostgreSQL Schema:**
-- `users` - User accounts & authentication
-- `spaces` - ZigZag spaces/documents
-- `cells` - Cell content & metadata
-- `dimensions` - Dimension definitions
-- `cell_history` - Version tracking
-- `space_collaborators` - Access control
-
-**Neo4j Graph:**
-- `(:Cell)` nodes - Cell representations
-- `[:CONNECTED]` relationships - Dimensional links
-- Properties: dimension, direction, timestamps
-
-## 🔧 Configuration
-
-### Environment Variables
-
-Create a `.env` file in the root directory:
-
-```bash
-# Server
-NODE_ENV=production
-PORT=3001
-
-# Database - PostgreSQL
-DATABASE_URL=postgresql://user:password@localhost:5432/zigzag
-
-# Database - Neo4j
-NEO4J_URI=bolt://localhost:7687
-NEO4J_USER=neo4j
-NEO4J_PASSWORD=your-password
-
-# Cache - Redis
-REDIS_URL=redis://localhost:6379
-
-# Authentication
-JWT_SECRET=your-secret-key-here
-JWT_EXPIRES_IN=7d
-
-# Frontend
-FRONTEND_URL=https://your-app.onrender.com
-
-# Optional: File Storage
-AWS_S3_BUCKET=
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-```
-
-## 📚 API Documentation
+## API Endpoints
 
 ### Authentication
-
-```http
-POST /api/auth/register
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "username": "username",
-  "password": "password123"
-}
-```
-
-```http
-POST /api/auth/login
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "password": "password123"
-}
-```
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login user
+- `GET /api/auth/verify` - Verify JWT token
 
 ### Spaces
-
-```http
-GET /api/spaces
-Authorization: Bearer <token>
-
-POST /api/spaces
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "name": "My Space",
-  "description": "Description",
-  "isPublic": false
-}
-```
+- `GET /api/spaces` - Get user's spaces
+- `POST /api/spaces` - Create new space
+- `GET /api/spaces/:id` - Get space details
+- `PUT /api/spaces/:id` - Update space
+- `DELETE /api/spaces/:id` - Delete space
 
 ### Cells
-
-```http
-GET /api/spaces/:id/cells
-Authorization: Bearer <token>
-
-POST /api/spaces/:id/cells
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "content": "Cell content",
-  "metadata": {}
-}
-```
+- `GET /api/spaces/:spaceId/cells` - Get cells in space
+- `POST /api/spaces/:spaceId/cells` - Create new cell
+- `PUT /api/cells/:id` - Update cell
+- `DELETE /api/cells/:id` - Delete cell
 
 ### Connections
+- `GET /api/spaces/:spaceId/connections` - Get connections
+- `POST /api/spaces/:spaceId/connections` - Create connection
+- `DELETE /api/connections/:id` - Delete connection
 
-```http
-POST /api/connections/connect
-Authorization: Bearer <token>
-Content-Type: application/json
+## WebSocket Events
 
-{
-  "fromCellId": "uuid",
-  "toCellId": "uuid",
-  "dimension": "d.1",
-  "direction": "positive"
-}
-```
+### Client -> Server
+- `join:space` - Join a space for real-time updates
+- `leave:space` - Leave a space
+- `cell:update` - Update cell content
+- `cell:move` - Move cell position
+- `connection:create` - Create new connection
+- `connection:delete` - Delete connection
 
-### WebSocket Events
+### Server -> Client
+- `cell:created` - New cell created
+- `cell:updated` - Cell content updated
+- `cell:moved` - Cell position changed
+- `cell:deleted` - Cell removed
+- `connection:created` - New connection created
+- `connection:deleted` - Connection removed
 
-```javascript
-// Connect to WebSocket
-const ws = new WebSocket('wss://your-app.onrender.com/ws');
+## Deployment
 
-// Authenticate
-ws.send(JSON.stringify({
-  type: 'auth',
-  token: 'your-jwt-token'
-}));
+### Deploy to Render.com
 
-// Join a space
-ws.send(JSON.stringify({
-  type: 'join_space',
-  spaceId: 'space-uuid'
-}));
-
-// Cell operations
-ws.send(JSON.stringify({
-  type: 'cell_update',
-  data: {
-    cellId: 'cell-uuid',
-    content: 'Updated content'
-  }
-}));
-```
-
-## 🚢 Deployment
-
-### Prerequisites
-
-1. **Render.com Account**: Sign up at [render.com](https://render.com)
-2. **Neo4j AuraDB**: Sign up at [neo4j.com/cloud/aura](https://neo4j.com/cloud/aura)
-3. **GitHub Repository**: Push your code to GitHub
-
-### Step-by-Step Deployment
-
-1. **Setup Neo4j AuraDB:**
-   ```cypher
-   CREATE CONSTRAINT cell_id_unique IF NOT EXISTS
-   FOR (c:Cell) REQUIRE c.id IS UNIQUE;
+1. **Create GitHub Repository**
+   ```bash
+   git remote add origin https://github.com/adammoore/gzigzag.git
+   git push -u origin phase-4c-cloud-deployment
    ```
 
-2. **Deploy to Render:**
+2. **Setup Neo4j AuraDB**
+   - Create account at https://neo4j.com/cloud/aura/
+   - Create new database instance
+   - Save connection credentials
+
+3. **Deploy on Render**
    - Connect GitHub repository
-   - Use `render.yaml` for automatic setup
-   - Set environment variables
-   - Deploy
+   - Use `render.yaml` for configuration
+   - Set environment variables:
+     - `JWT_SECRET` (generate secure key)
+     - `NEO4J_URI` (from AuraDB)
+     - `NEO4J_USER` (from AuraDB)
+     - `NEO4J_PASSWORD` (from AuraDB)
 
-3. **Initialize Database:**
+4. **Post-Deployment**
    ```bash
+   # Run migrations (via Render shell)
    npm run migrate
-   ```
-
-4. **Verify Deployment:**
-   ```bash
+   
+   # Verify deployment
    curl https://your-app.onrender.com/health
    ```
 
-## 🔒 Security
+## Environment Variables
 
-- JWT-based authentication
-- Password hashing with bcrypt
-- Rate limiting on API endpoints
-- Input validation & sanitization
+### Development (.env)
+```
+NODE_ENV=development
+PORT=3001
+CLIENT_URL=http://localhost:5173
+JWT_SECRET=dev-secret-key
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=zigzag_db
+DB_USER=zigzag_user
+DB_PASSWORD=zigzag_password
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=zigzag_password
+REDIS_HOST=localhost
+REDIS_PORT=6379
+```
+
+### Production (Render)
+All sensitive values should be set via Render dashboard.
+
+## Architecture
+
+### Data Flow
+1. Client makes request to Express API
+2. API validates JWT token via middleware
+3. Data persisted to PostgreSQL
+4. Graph relationships stored in Neo4j
+5. Cache updated in Redis
+6. WebSocket broadcasts changes to connected clients
+
+### Security
+- JWT authentication with 7-day expiry
+- Bcrypt password hashing
 - CORS configuration
-- SQL injection protection
-- XSS prevention headers
-- HTTPS enforcement
+- Input validation
+- SQL injection prevention via parameterized queries
 
-## 📊 Performance
+## Testing
 
-- PostgreSQL connection pooling
-- Neo4j query optimization
-- Redis caching layer
-- Lazy loading for large spaces
-- WebSocket connection management
-- CDN for static assets
-- Gzip compression
-- Database indexing
-
-## 🧪 Testing
-
+### Unit Tests
 ```bash
-# Run all tests
-npm test
+npm run test:core
+npm run test:server
+npm run test:client
+```
 
-# Run specific package tests
-npm test -w @zigzag/core
-npm test -w @zigzag/server
-npm test -w @zigzag/client
+### Integration Tests
+```bash
+# Start test environment
+docker compose -f docker-compose.test.yml up -d
 
 # Run integration tests
 npm run test:integration
-
-# Run e2e tests
-npm run test:e2e
 ```
 
-## 📈 Monitoring
+### Manual Testing
+1. Open http://localhost:5173
+2. Register new account
+3. Create space
+4. Add cells and connections
+5. Open second browser for collaboration testing
 
-- Health check endpoint: `/health`
-- Render.com metrics dashboard
-- Neo4j query logging
-- Application logs in `/logs`
-- Error tracking with Sentry (optional)
+## Troubleshooting
 
-## 🔄 Backup & Recovery
-
-### PostgreSQL Backup
+### Docker Issues
 ```bash
-pg_dump $DATABASE_URL > backup_$(date +%Y%m%d).sql
+# Reset all containers
+docker compose down -v
+docker compose up -d --build
+
+# View logs
+docker compose logs -f [service]
 ```
 
-### Neo4j Export
-```cypher
-CALL apoc.export.cypher.all("backup.cypher", {
-  format: "plain",
-  useOptimizations: {type: "UNWIND_BATCH"}
-})
+### Database Issues
+```bash
+# Connect to PostgreSQL
+docker compose exec postgres psql -U zigzag_user -d zigzag_db
+
+# Connect to Neo4j
+# Open http://localhost:7474
+# Login with neo4j/zigzag_password
 ```
 
-## 🤝 Contributing
+### Build Issues
+```bash
+# Clean install
+rm -rf node_modules package-lock.json
+rm -rf packages/*/node_modules packages/*/package-lock.json
+npm install
+npm run build:all
+```
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Open a Pull Request
+## Contributing
+1. Fork repository
+2. Create feature branch
+3. Make changes
+4. Run tests
+5. Submit pull request
 
-## 📝 License
+## License
+MIT
 
-MIT License - See LICENSE file for details
-
-## 🙏 Acknowledgments
-
-- Ted Nelson for the ZigZag concept
-- The original GZigZag/Gzz implementation team
-- Open source community contributors
-
-## 📞 Support
-
-- **Documentation**: See `/docs` folder
-- **Issues**: GitHub Issues
-- **Email**: support@zigzag.example.com
-- **Discord**: [Join our community](https://discord.gg/zigzag)
-
-## 🎯 Roadmap
-
-### Phase 5: Advanced Features
-- [ ] Mobile applications (React Native)
-- [ ] Offline support with sync
-- [ ] Advanced visualization modes
-- [ ] Plugin system
-- [ ] AI-powered suggestions
-
-### Phase 6: Enterprise Features
-- [ ] SSO/SAML authentication
-- [ ] Advanced permissions
-- [ ] Audit logging
-- [ ] Compliance features
-- [ ] White-label support
-
-## 🚀 Success Metrics
-
-- ✅ 99.9% uptime
-- ✅ <2s page load time
-- ✅ <100ms API response time
-- ✅ Support for 1000+ concurrent users
-- ✅ Real-time collaboration
-- ✅ Full ZigZag functionality preserved
-
----
-
-**Ready to deploy?** Run `./deploy.sh` and follow the interactive guide!
+## Acknowledgments
+Based on Ted Nelson's original ZigZag concept.
