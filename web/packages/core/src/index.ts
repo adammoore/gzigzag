@@ -1,262 +1,525 @@
-// ZigZag Core - Complete Implementation for Phase 4C
+// ZigZag Core TypeScript Implementation - Proof of Concept
+// Copyright (c) Ted Nelson and Adam Vials Moore
 
-// Cell class
+export type CellId = string;
+export type DimensionName = string;
+export type Direction = 1 | -1;
+
+export * from './io';
+
+export class ZigZagError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ZigZagError';
+  }
+}
+
 export class ZZCell {
-  id: string;
-  content: string;
-  connections: Map<string, Set<string>>;
-  private _space: ZZSpace | null = null;
-  
-  constructor(id: string, content: string = '') {
-    this.id = id;
-    this.content = content;
-    this.connections = new Map();
+  private _id: CellId;
+  private _text: string;
+  private _connections: Map<DimensionName, { positive?: CellId; negative?: CellId }>;
+  private _space: ZZSpace;
+
+  constructor(space: ZZSpace, text: string = '', id?: CellId) {
+    this._id = id || this.generateId();
+    this._text = text;
+    this._connections = new Map();
+    this._space = space;
+    space.addCell(this);
   }
 
-  // Compatibility getter for 'text' property
+  get id(): CellId {
+    return this._id;
+  }
+
   get text(): string {
-    return this.content;
+    return this._text;
   }
 
   set text(value: string) {
-    this.content = value;
+    this._text = value;
   }
 
-  // Set the parent space reference
-  setSpace(space: ZZSpace): void {
-    this._space = space;
+  // Compatibility property for phase-4c
+  get content(): string {
+    return this._text;
   }
-  
-  connect(dimension: string, targetId: string) {
-    if (!this.connections.has(dimension)) {
-      this.connections.set(dimension, new Set());
+
+  set content(value: string) {
+    this._text = value;
+  }
+
+  step(dimension: DimensionName, direction: Direction = 1): ZZCell | null {
+    const conn = this._connections.get(dimension);
+    if (!conn) return null;
+
+    const targetId = direction > 0 ? conn.positive : conn.negative;
+    if (!targetId) return null;
+
+    return this._space.getCell(targetId);
+  }
+
+  connect(dimension: DimensionName, toCell: ZZCell): void {
+    const existingConn = this._connections.get(dimension);
+    if (existingConn?.positive) {
+      throw new ZigZagError(`Cell ${this.id} already connected positively on ${dimension}`);
     }
-    this.connections.get(dimension)!.add(targetId);
-  }
-  
-  disconnect(dimension: string, targetId: string) {
-    this.connections.get(dimension)?.delete(targetId);
-  }
-  
-  getConnections(dimension: string): string[] {
-    return Array.from(this.connections.get(dimension) || []);
-  }
-  
-  getAllConnections(): Map<string, Set<string>> {
-    return this.connections;
-  }
 
-  // Navigation method expected by client
-  step(dimension: string, direction: number): ZZCell | null {
-    if (!this._space) return null;
-    
-    const connections = this.getConnections(dimension);
-    if (connections.length === 0) return null;
-    
-    // For positive direction, get the first connection
-    // For negative direction, find cells that connect to this one
-    if (direction > 0) {
-      const targetId = connections[0];
-      return this._space.getCell(targetId) || null;
-    } else {
-      // Find cells that connect to this cell in this dimension
-      const allCells = this._space.getAllCells();
-      for (const cell of allCells) {
-        const cellConnections = cell.getConnections(dimension);
-        if (cellConnections.includes(this.id)) {
-          return cell;
-        }
-      }
-      return null;
+    const targetConn = toCell._connections.get(dimension);
+    if (targetConn?.negative) {
+      throw new ZigZagError(`Cell ${toCell.id} already connected negatively on ${dimension}`);
     }
+
+    this.setConnection(dimension, 1, toCell.id);
+    toCell.setConnection(dimension, -1, this.id);
+    this._space.registerDimension(dimension);
   }
 
-  // Create new cell and connect in dimension
-  newCell(dimension: string, direction: number, content: string = ''): ZZCell | null {
-    if (!this._space) return null;
-    
-    const newCell = this._space.createCell(content);
+  newCell(dimension: DimensionName, direction: Direction = 1, text: string = ''): ZZCell {
+    const newCell = new ZZCell(this._space, text);
     
     if (direction > 0) {
-      this._space.connectCells(this.id, newCell.id, dimension);
+      this.connect(dimension, newCell);
     } else {
-      this._space.connectCells(newCell.id, this.id, dimension);
+      newCell.connect(dimension, this);
     }
     
     return newCell;
   }
 
-  // Get head cell in dimension (furthest negative)
-  getHead(dimension: string): ZZCell {
-    let current: ZZCell = this;
-    let prev = current.step(dimension, -1);
+  excise(dimension: DimensionName): void {
+    const positive = this.step(dimension, 1);
+    const negative = this.step(dimension, -1);
     
-    while (prev) {
-      current = prev;
-      prev = current.step(dimension, -1);
+    this.disconnect(dimension, 1);
+    this.disconnect(dimension, -1);
+    
+    if (positive && negative) {
+      negative.connect(dimension, positive);
+    }
+  }
+
+  getHead(dimension: DimensionName): ZZCell {
+    let cell: ZZCell = this;
+    const visited = new Set<string>();
+    
+    while (true) {
+      if (visited.has(cell.id)) {
+        return cell;
+      }
+      visited.add(cell.id);
+      
+      const nextCell = cell.step(dimension, -1);
+      if (!nextCell) {
+        return cell;
+      }
+      cell = nextCell;
+    }
+  }
+
+  readRank(dimension: DimensionName, direction: Direction = 1): ZZCell[] {
+    const result: ZZCell[] = [this];
+    let cell: ZZCell = this;
+    const visited = new Set<string>([this.id]);
+    
+    while (true) {
+      const nextCell = cell.step(dimension, direction);
+      if (!nextCell || visited.has(nextCell.id)) {
+        break;
+      }
+      result.push(nextCell);
+      visited.add(nextCell.id);
+      cell = nextCell;
     }
     
-    return current;
+    return result;
+  }
+
+  private setConnection(dimension: DimensionName, direction: Direction, targetId: CellId): void {
+    const conn = this._connections.get(dimension) || {};
+    
+    if (direction > 0) {
+      conn.positive = targetId;
+    } else {
+      conn.negative = targetId;
+    }
+    
+    this._connections.set(dimension, conn);
+  }
+
+  private disconnect(dimension: DimensionName, direction: Direction): void {
+    const conn = this._connections.get(dimension);
+    if (!conn) return;
+
+    if (direction > 0) {
+      delete conn.positive;
+    } else {
+      delete conn.negative;
+    }
+
+    if (!conn.positive && !conn.negative) {
+      this._connections.delete(dimension);
+    } else {
+      this._connections.set(dimension, conn);
+    }
+  }
+
+  private generateId(): CellId {
+    return Math.random().toString(36).substr(2, 9);
+  }
+
+  getDimensions(): DimensionName[] {
+    return Array.from(this._connections.keys());
+  }
+
+  toString(): string {
+    return `'${this.id}' (${this.text})`;
+  }
+
+  // Phase-4c compatibility methods
+  getConnections(dimension: string): string[] {
+    const conn = this._connections.get(dimension);
+    if (!conn) return [];
+    
+    const result: string[] = [];
+    if (conn.positive) result.push(conn.positive);
+    if (conn.negative) result.push(conn.negative);
+    return result;
+  }
+
+  getAllConnections(): Map<string, Set<string>> {
+    const result = new Map<string, Set<string>>();
+    this._connections.forEach((conn, dimension) => {
+      const targets = new Set<string>();
+      if (conn.positive) targets.add(conn.positive);
+      if (conn.negative) targets.add(conn.negative);
+      if (targets.size > 0) {
+        result.set(dimension, targets);
+      }
+    });
+    return result;
+  }
+
+  setSpace(space: ZZSpace): void {
+    // Already handled in constructor
   }
 }
 
-// Space class
 export class ZZSpace {
-  private cells: Map<string, ZZCell>;
+  private _id: string;
+  private _cells: Map<CellId, ZZCell>;
+  private _dimensions: Set<DimensionName>;
   private _homeCell: ZZCell | null;
-  private dimensions: Set<string>;
-  
-  constructor() {
-    this.cells = new Map();
+
+  constructor(id?: string) {
+    this._id = id || this.generateSpaceId();
+    this._cells = new Map();
+    this._dimensions = new Set();
     this._homeCell = null;
-    this.dimensions = new Set(['d.1', 'd.2', 'd.3']);
   }
-  
-  createCell(content: string = ''): ZZCell {
-    const id = `cell-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const cell = new ZZCell(id, content);
-    cell.setSpace(this);
-    this.cells.set(id, cell);
+
+  get id(): string {
+    return this._id;
+  }
+
+  addCell(cell: ZZCell): void {
+    this._cells.set(cell.id, cell);
+    
     if (!this._homeCell) {
       this._homeCell = cell;
     }
-    return cell;
   }
-  
-  getCell(id: string): ZZCell | undefined {
-    return this.cells.get(id);
+
+  getCell(id: CellId): ZZCell | null {
+    return this._cells.get(id) || null;
   }
-  
-  deleteCell(id: string): boolean {
-    const cell = this.cells.get(id);
-    if (!cell) return false;
-    
-    // Remove all connections to this cell
-    this.cells.forEach(otherCell => {
-      otherCell.getAllConnections().forEach(connections => {
-        connections.delete(id);
-      });
-    });
-    
-    return this.cells.delete(id);
+
+  getHomeCell(): ZZCell {
+    if (!this._homeCell) {
+      this._homeCell = new ZZCell(this, 'Home');
+    }
+    return this._homeCell;
   }
-  
+
+  registerDimension(dimension: DimensionName): void {
+    this._dimensions.add(dimension);
+  }
+
+  getDimensions(): DimensionName[] {
+    return Array.from(this._dimensions);
+  }
+
+  getCells(): ZZCell[] {
+    return Array.from(this._cells.values());
+  }
+
+  getAllCells(): ZZCell[] {
+    return this.getCells();
+  }
+
+  private generateSpaceId(): string {
+    return `space_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  setHomeCell(cell: ZZCell): void {
+    this._homeCell = cell;
+  }
+
   get homeCell(): ZZCell | null {
     return this._homeCell;
   }
 
-  // Compatibility method for client
-  getHomeCell(): ZZCell | null {
-    return this._homeCell;
-  }
-  
-  setHomeCell(cell: ZZCell): void {
-    if (this.cells.has(cell.id)) {
-      this._homeCell = cell;
-    }
+  // Phase-4c compatibility methods
+  createCell(content: string = ''): ZZCell {
+    return new ZZCell(this, content);
   }
 
-  // Compatibility method for client
-  getCells(): ZZCell[] {
-    return this.getAllCells();
-  }
-  
-  getAllCells(): ZZCell[] {
-    return Array.from(this.cells.values());
-  }
-  
-  getDimensions(): string[] {
-    return Array.from(this.dimensions);
-  }
-  
-  addDimension(name: string): void {
-    this.dimensions.add(name);
-  }
-  
   connectCells(fromId: string, toId: string, dimension: string): boolean {
-    const fromCell = this.cells.get(fromId);
-    const toCell = this.cells.get(toId);
+    const fromCell = this._cells.get(fromId);
+    const toCell = this._cells.get(toId);
     
     if (!fromCell || !toCell) return false;
     
-    fromCell.connect(dimension, toId);
-    return true;
+    try {
+      fromCell.connect(dimension, toCell);
+      return true;
+    } catch (error) {
+      console.warn(`Failed to connect cells: ${error}`);
+      return false;
+    }
   }
-  
+
   disconnectCells(fromId: string, toId: string, dimension: string): boolean {
-    const fromCell = this.cells.get(fromId);
+    const fromCell = this._cells.get(fromId);
     if (!fromCell) return false;
     
-    fromCell.disconnect(dimension, toId);
+    fromCell.excise(dimension);
     return true;
+  }
+
+  deleteCell(id: string): boolean {
+    const cell = this._cells.get(id);
+    if (!cell) return false;
+    
+    // Remove all connections to this cell
+    this._cells.forEach(otherCell => {
+      otherCell.getAllConnections().forEach((connections, dimension) => {
+        if (connections.has(id)) {
+          otherCell.excise(dimension);
+        }
+      });
+    });
+    
+    return this._cells.delete(id);
+  }
+
+  addDimension(name: string): void {
+    this.registerDimension(name);
   }
 }
 
-// Main factory function expected by client
-export function createBlankSpace(): ZZSpace {
-  const space = new ZZSpace();
+// BIOCHEMISTRY DEMO (Your YouTube demo recreation!)
+export function createKrebsCycleDemo(): ZZSpace {
+  const space = new ZZSpace('biochemistry_demo');
+  const home = space.getHomeCell();
+  home.text = 'Krebs Cycle Demo';
+
+  console.log('🧬 Creating Krebs Cycle ZigZag Structure...');
   
-  // Create initial cells for demo
-  const cell1 = space.createCell('Welcome to ZigZag!');
-  const cell2 = space.createCell('This is a hyperdimensional space');
-  const cell3 = space.createCell('Navigate with arrow keys');
-  
-  // Connect them in different dimensions
-  space.connectCells(cell1.id, cell2.id, 'd.1');
-  space.connectCells(cell2.id, cell3.id, 'd.1');
-  space.connectCells(cell1.id, cell3.id, 'd.2');
-  
+  const acetylCoA = home.newCell('d.biochem', 1, 'Acetyl-CoA');
+  const citrate = acetylCoA.newCell('d.krebs', 1, 'Citrate');
+  const isocitrate = citrate.newCell('d.krebs', 1, 'Isocitrate');
+  const alphaKetoglutarate = isocitrate.newCell('d.krebs', 1, 'α-Ketoglutarate');
+  const succinylCoA = alphaKetoglutarate.newCell('d.krebs', 1, 'Succinyl-CoA');
+  const succinate = succinylCoA.newCell('d.krebs', 1, 'Succinate');
+  const fumarate = succinate.newCell('d.krebs', 1, 'Fumarate');
+  const malate = fumarate.newCell('d.krebs', 1, 'Malate');
+  const oxaloacetate = malate.newCell('d.krebs', 1, 'Oxaloacetate');
+
+  // Complete the cycle
+  oxaloacetate.connect('d.krebs', acetylCoA);
+
+  // Add carbon count dimension - create separate classification cells
+  const carbonCategories = home.newCell('d.carbons', 1, 'Carbon Categories');
+  const c2Category = carbonCategories.newCell('d.carbons', 1, 'C2 Compounds');
+  const c4Category = c2Category.newCell('d.carbons', 1, 'C4 Compounds'); 
+  const c6Category = c4Category.newCell('d.carbons', 1, 'C6 Compounds');
+
+  // Create specific carbon count cells for each compound
+  const acetylC2 = c2Category.newCell('d.carbon-instances', 1, 'Acetyl-CoA (C2)');
+  const citrateC6 = c6Category.newCell('d.carbon-instances', 1, 'Citrate (C6)');
+  const isocitrateC6 = citrateC6.newCell('d.carbon-instances', 1, 'Isocitrate (C6)');
+  const oxaloacetateC4 = c4Category.newCell('d.carbon-instances', 1, 'Oxaloacetate (C4)');
+
+  // Connect compounds to their carbon classifications
+  acetylCoA.connect('d.carbon-count', acetylC2);
+  citrate.connect('d.carbon-count', citrateC6);
+  isocitrate.connect('d.carbon-count', isocitrateC6);
+  oxaloacetate.connect('d.carbon-count', oxaloacetateC4);
+
   return space;
 }
 
-// Krebs Cycle demo function expected by client
-export function createKrebsCycleDemo(): ZZSpace {
-  const space = new ZZSpace();
+export function animateKrebsCycle(space: ZZSpace): CellId[] {
+  const home = space.getHomeCell();
+  const acetylCoA = home.step('d.biochem', 1);
   
-  // Create cells for the Krebs cycle
-  const citrate = space.createCell('Citrate');
-  const isocitrate = space.createCell('Isocitrate');
-  const alphaKetoglutarate = space.createCell('α-Ketoglutarate');
-  const succinylCoA = space.createCell('Succinyl-CoA');
-  const succinate = space.createCell('Succinate');
-  const fumarate = space.createCell('Fumarate');
-  const malate = space.createCell('Malate');
-  const oxaloacetate = space.createCell('Oxaloacetate');
-  const acetylCoA = space.createCell('Acetyl-CoA');
+  if (!acetylCoA) {
+    throw new ZigZagError('Krebs cycle not found in space');
+  }
+
+  const cyclePath = acetylCoA.readRank('d.krebs', 1);
+  return cyclePath.map(cell => cell.id);
+}
+
+// DEMO AND TESTS
+function runDemo(): void {
+  console.log('🎯 ZigZag TypeScript Demo - Ted Nelson\'s Vision in Action!');
+  console.log('='.repeat(60));
+
+  // Test basic ZigZag operations
+  console.log('\n📝 Testing Basic ZigZag Operations:');
+  const space = new ZZSpace('test');
+  const a = new ZZCell(space, 'A');
+  const b = new ZZCell(space, 'B');
+  const c = b.newCell('d.1', 1, 'C');
   
-  // Create the cycle connections in d.1
-  space.connectCells(citrate.id, isocitrate.id, 'd.1');
-  space.connectCells(isocitrate.id, alphaKetoglutarate.id, 'd.1');
-  space.connectCells(alphaKetoglutarate.id, succinylCoA.id, 'd.1');
-  space.connectCells(succinylCoA.id, succinate.id, 'd.1');
-  space.connectCells(succinate.id, fumarate.id, 'd.1');
-  space.connectCells(fumarate.id, malate.id, 'd.1');
-  space.connectCells(malate.id, oxaloacetate.id, 'd.1');
-  space.connectCells(oxaloacetate.id, citrate.id, 'd.1');
+  a.connect('d.1', b);
   
-  // Connect acetyl-CoA input in d.2
-  space.connectCells(acetylCoA.id, citrate.id, 'd.2');
+  console.log(`Created cells: ${a} -> ${b} -> ${c}`);
+  console.log(`Navigate A->d.1: ${a.step('d.1', 1)}`);
+  console.log(`Navigate C<-d.1: ${c.step('d.1', -1)}`);
+  console.log(`Full rank from A: ${a.readRank('d.1', 1).map(cell => cell.text).join(' -> ')}`);
+
+  // Your biochemistry demo!
+  console.log('\n🧬 Biochemistry Demo (recreating your YouTube video):');
+  const biochemSpace = createKrebsCycleDemo();
+  const cyclePath = animateKrebsCycle(biochemSpace);
   
-  // Create enzyme connections in d.3
-  const enzymes = [
-    space.createCell('Citrate synthase'),
-    space.createCell('Aconitase'),
-    space.createCell('Isocitrate dehydrogenase'),
-    space.createCell('α-Ketoglutarate dehydrogenase'),
-    space.createCell('Succinate thiokinase'),
-    space.createCell('Succinate dehydrogenase'),
-    space.createCell('Fumarase'),
-    space.createCell('Malate dehydrogenase')
-  ];
-  
-  const substrates = [citrate, isocitrate, alphaKetoglutarate, succinylCoA, 
-                     succinate, fumarate, malate, oxaloacetate];
-  
-  enzymes.forEach((enzyme, i) => {
-    space.connectCells(substrates[i].id, enzyme.id, 'd.3');
+  console.log('Krebs Cycle Animation Path:');
+  cyclePath.forEach((cellId, index) => {
+    const cell = biochemSpace.getCell(cellId);
+    console.log(`  Step ${index + 1}: ${cell?.text} (${cellId})`);
   });
+
+  console.log(`\n✅ Total compounds in cycle: ${cyclePath.length}`);
+  console.log(`✅ Dimensions in space: ${biochemSpace.getDimensions().join(', ')}`);
+  console.log(`✅ Total cells in space: ${biochemSpace.getCells().length}`);
+
+  console.log('\n🎉 Success! ZigZag is working - "locally rational, globally paradoxical"');
+}
+
+// BLANK SPACE CREATION
+
+/**
+ * Standard ZigZag dimensions as per original GzigZag
+ */
+export const STANDARD_DIMENSIONS = [
+  'd.1',      // Primary horizontal dimension
+  'd.2',      // Primary vertical dimension  
+  'd.3',      // Primary depth dimension
+  'd.clone',  // Clone relationships
+  'd.cursor', // Cursor positions
+  'd.mark',   // Marked cells
+] as const;
+
+/**
+ * System dimensions used internally
+ */
+export const SYSTEM_DIMENSIONS = [
+  'd.system',       // System cells
+  'd.dims',         // Dimension list
+  'd.cursor-cargo', // Cursor cargo connections
+  'd.cellcreation', // Cell creation tracking
+] as const;
+
+/**
+ * Creates a blank ZigZag space with standard dimensions
+ * This matches the original GzigZag startup configuration
+ */
+export function createBlankSpace(): ZZSpace {
+  const space = new ZZSpace('blank_space');
   
+  // Get the automatically created home cell
+  const homeCell = space.getHomeCell();
+  homeCell.text = 'HOME';
+
+  // Register standard dimensions first
+  [...STANDARD_DIMENSIONS, ...SYSTEM_DIMENSIONS].forEach(dimName => {
+    space.registerDimension(dimName);
+  });
+
+  // Create dimension list structure (following original GzigZag pattern)
+  const dimListLabel = new ZZCell(space, 'DimLists');
+  const dimList = new ZZCell(space, ''); // Empty cell as list head
+  
+  // Connect dimension structure
+  homeCell.connect('d.2', dimListLabel);
+  dimListLabel.connect('d.1', dimList);
+
+  // Add standard dimensions to the dimension list
+  let prevDimCell: ZZCell | null = null;
+  
+  [...STANDARD_DIMENSIONS, ...SYSTEM_DIMENSIONS].forEach(dimName => {
+    const dimCell = new ZZCell(space, dimName);
+    space.registerDimension(dimName);
+    
+    if (prevDimCell) {
+      prevDimCell.connect('d.2', dimCell);
+    } else {
+      dimList.connect('d.2', dimCell);
+    }
+    prevDimCell = dimCell;
+  });
+
+  // Create Actions list structure
+  const actionsLabel = new ZZCell(space, 'Actions');
+  const actionsList = new ZZCell(space, ''); // Empty cell as list head
+  
+  dimListLabel.connect('d.2', actionsLabel);
+  actionsLabel.connect('d.1', actionsList);
+
+  // Create Views list structure  
+  const viewsLabel = new ZZCell(space, 'Views');
+  const viewsList = new ZZCell(space, ''); // Empty cell as list head
+  
+  actionsLabel.connect('d.2', viewsLabel);
+  viewsLabel.connect('d.1', viewsList);
+
+  // Add basic views (following original GzigZag)
+  const vanishingView = new ZZCell(space, 'Vanishing');
+  const rowView = new ZZCell(space, 'Row'); 
+  const columnView = new ZZCell(space, 'Column');
+  
+  viewsList.connect('d.2', vanishingView);
+  vanishingView.connect('d.2', rowView);
+  rowView.connect('d.2', columnView);
+
+  // Create Bindings list structure
+  const bindingsLabel = new ZZCell(space, 'Bindings');
+  const bindingsList = new ZZCell(space, 'Normal mode');
+  
+  viewsLabel.connect('d.2', bindingsLabel);
+  bindingsLabel.connect('d.1', bindingsList);
+
+  // Create basic cursor
+  const cursor1 = new ZZCell(space, 'Cursor-1');
+  homeCell.connect('d.cursor', cursor1);
+
+  // Create some basic cells connected on d.1 to ensure navigation works
+  // This follows the original GzigZag pattern of having some cells to start with
+  const cell1 = homeCell.newCell('d.1', 1, 'Cell 1');
+  const cell2 = cell1.newCell('d.1', 1, 'Cell 2');
+  const cell3 = cell2.newCell('d.1', 1, 'Cell 3');
+
   return space;
+}
+
+/**
+ * Creates a new cell in the space - helper for cleaner code
+ */
+export function createCell(space: ZZSpace, text: string = ''): ZZCell {
+  return new ZZCell(space, text);
 }
 
 // GZZ Import/Export types
@@ -366,3 +629,8 @@ export default {
   loadGZZFiles,
   createCellsFromImport
 };
+
+// Run the demo if not in a module environment
+if (typeof module !== 'undefined') {
+  runDemo();
+}
