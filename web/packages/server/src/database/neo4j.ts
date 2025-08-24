@@ -119,4 +119,112 @@ export const graph = {
       await session.close();
     }
   },
+
+  async getCellConnections(cellId: string, dimension?: string): Promise<any[]> {
+    if (!driver) return [];
+    const session = driver.session();
+    try {
+      const query = dimension
+        ? `MATCH (c:Cell {id: $cellId})-[r:CONNECTED {dimension: $dimension}]-(connected:Cell)
+           RETURN connected.id as id, r.dimension as dimension, r.direction as direction`
+        : `MATCH (c:Cell {id: $cellId})-[r:CONNECTED]-(connected:Cell)
+           RETURN connected.id as id, r.dimension as dimension, r.direction as direction`;
+      
+      const result = await session.run(query, { cellId, dimension });
+      return result.records.map(record => record.toObject());
+    } finally {
+      await session.close();
+    }
+  },
+
+  async traverseDimension(cellId: string, dimension: string, direction: string = 'positive', maxSteps: number = 10): Promise<any[]> {
+    if (!driver) return [];
+    const session = driver.session();
+    try {
+      const result = await session.run(
+        `MATCH path = (start:Cell {id: $cellId})
+         -[r:CONNECTED*1..$maxSteps {dimension: $dimension, direction: $direction}]->
+         (end:Cell)
+         RETURN [node IN nodes(path) | node.id] as path_ids, length(path) as depth`,
+        { cellId, dimension, direction, maxSteps }
+      );
+      return result.records.map(record => record.toObject());
+    } finally {
+      await session.close();
+    }
+  },
+
+  async findPath(fromCellId: string, toCellId: string, maxLength: number = 10): Promise<any[]> {
+    if (!driver) return [];
+    const session = driver.session();
+    try {
+      const result = await session.run(
+        `MATCH path = allShortestPaths((start:Cell {id: $fromCellId})
+         -[r:CONNECTED*1..$maxLength]-(end:Cell {id: $toCellId}))
+         RETURN [node IN nodes(path) | node.id] as path_ids, 
+                [rel IN relationships(path) | {dimension: rel.dimension, direction: rel.direction}] as relationships,
+                length(path) as depth`,
+        { fromCellId, toCellId, maxLength }
+      );
+      return result.records.map(record => record.toObject());
+    } finally {
+      await session.close();
+    }
+  },
+
+  async getDimensionStats(spaceId: string): Promise<any> {
+    if (!driver) return {};
+    const session = driver.session();
+    try {
+      const result = await session.run(
+        `MATCH (c:Cell {space_id: $spaceId})-[r:CONNECTED]-()
+         RETURN r.dimension as dimension, count(r) as count
+         ORDER BY count DESC`,
+        { spaceId }
+      );
+      const stats = result.records.map(record => record.toObject());
+      return {
+        dimensions: stats,
+        total_connections: stats.reduce((sum, s) => sum + s.count, 0)
+      };
+    } finally {
+      await session.close();
+    }
+  },
+
+  async getSpaceGraph(spaceId: string): Promise<any> {
+    if (!driver) return { nodes: [], edges: [] };
+    const session = driver.session();
+    try {
+      const result = await session.run(
+        `MATCH (c:Cell {space_id: $spaceId})
+         OPTIONAL MATCH (c)-[r:CONNECTED]->(connected:Cell {space_id: $spaceId})
+         RETURN c.id as id, 
+                collect({
+                  target: connected.id, 
+                  dimension: r.dimension, 
+                  direction: r.direction
+                }) as connections`,
+        { spaceId }
+      );
+      
+      const nodes = result.records.map(record => ({
+        id: record.get('id'),
+        connections: record.get('connections').filter((c: any) => c.target)
+      }));
+      
+      const edges = nodes.flatMap(node => 
+        node.connections.map((conn: any) => ({
+          from: node.id,
+          to: conn.target,
+          dimension: conn.dimension,
+          direction: conn.direction
+        }))
+      );
+      
+      return { nodes, edges };
+    } finally {
+      await session.close();
+    }
+  },
 };

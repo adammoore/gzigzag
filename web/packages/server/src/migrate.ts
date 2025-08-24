@@ -5,7 +5,7 @@ import path from 'path';
 const pool = new Pool({
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME || 'zigzag_db',
+  database: process.env.DB_NAME || 'zigzag',
   user: process.env.DB_USER || 'zigzag_user',
   password: process.env.DB_PASSWORD || 'zigzag_password'
 });

@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { body, param, query, validationResult } from 'express-validator';
 import { graph } from '../database/neo4j';
 import { getPool } from '../database/postgres';
@@ -20,7 +20,7 @@ const validateCellId = [
 ];
 
 // Connect two cells
-router.post('/connect', validateConnection, async (req, res) => {
+router.post('/connect', validateConnection, async (req: Request, res: Response) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -94,7 +94,7 @@ router.post('/connect', validateConnection, async (req, res) => {
 });
 
 // Disconnect two cells
-router.delete('/disconnect', validateConnection, async (req, res) => {
+router.delete('/disconnect', validateConnection, async (req: Request, res: Response) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -152,7 +152,7 @@ router.delete('/disconnect', validateConnection, async (req, res) => {
 });
 
 // Get connections for a cell
-router.get('/cell/:cellId', validateCellId, async (req, res) => {
+router.get('/cell/:cellId', validateCellId, async (req: Request, res: Response) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -221,7 +221,7 @@ router.get('/traverse/:cellId',
     query('direction').isIn(['positive', 'negative']),
     query('maxSteps').optional().isInt({ min: 1, max: 100 }),
   ],
-  async (req, res) => {
+  async (req: Request, res: Response) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -300,7 +300,7 @@ router.get('/path',
     query('to').isUUID(),
     query('maxLength').optional().isInt({ min: 1, max: 10 }),
   ],
-  async (req, res) => {
+  async (req: Request, res: Response) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -370,7 +370,7 @@ router.get('/path',
 );
 
 // Get dimension statistics for a space
-router.get('/space/:spaceId/stats', async (req, res) => {
+router.get('/space/:spaceId/stats', async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
     const spaceId = req.params.spaceId;

@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getPool, withTransaction } from '../database/postgres';
 import { graph } from '../database/neo4j';
 import { logger } from '../utils/logger';
-import { ZigZagSpace, Cell, Connection } from '@zigzag/core';
+import { ZZSpace, Cell, GZZConnection } from '@zigzag/core';
 
 const router = Router();
 
