@@ -53,10 +53,10 @@ CREATE TABLE IF NOT EXISTS permissions (
 );
 
 -- Create indexes
-CREATE INDEX idx_cells_space_id ON cells(space_id);
-CREATE INDEX idx_connections_from_cell ON connections(from_cell_id);
-CREATE INDEX idx_connections_to_cell ON connections(to_cell_id);
-CREATE INDEX idx_permissions_user ON permissions(user_id);
+CREATE INDEX IF NOT EXISTS idx_cells_space_id ON cells(space_id);
+CREATE INDEX IF NOT EXISTS idx_connections_from_cell ON connections(from_cell_id);
+CREATE INDEX IF NOT EXISTS idx_connections_to_cell ON connections(to_cell_id);
+CREATE INDEX IF NOT EXISTS idx_permissions_user ON permissions(user_id);
 
 -- Create updated_at trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -68,11 +68,14 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Apply updated_at triggers
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_spaces_updated_at ON spaces;
 CREATE TRIGGER update_spaces_updated_at BEFORE UPDATE ON spaces
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_cells_updated_at ON cells;
 CREATE TRIGGER update_cells_updated_at BEFORE UPDATE ON cells
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

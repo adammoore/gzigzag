@@ -4,7 +4,7 @@ services:
     name: zigzag-api
     runtime: node
     repo: https://github.com/adammoore/gzigzag
-    branch: main
+    branch: phase-4c-modernized
     rootDir: web
     buildCommand: npm install && npm run build:all
     startCommand: npm run start:server
@@ -17,12 +17,20 @@ services:
         fromDatabase:
           name: zigzag-db
           property: connectionString
+      - key: DB_NAME
+        value: zigzag_db
+      - key: DB_USER
+        value: zigzag_user
       - key: NEO4J_URI
         sync: false
       - key: NEO4J_USER
         sync: false
       - key: NEO4J_PASSWORD
         sync: false
+      - key: REDIS_URL
+        fromDatabase:
+          name: zigzag-cache
+          property: connectionString
       - key: CLIENT_URL
         value: https://zigzag-client.onrender.com
 
@@ -31,10 +39,13 @@ services:
     name: zigzag-client
     runtime: static
     repo: https://github.com/adammoore/gzigzag
-    branch: main
+    branch: phase-4c-modernized
     rootDir: web
     buildCommand: npm install && npm run build:client
     staticPublishPath: ./packages/client/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://zigzag-api.onrender.com
     headers:
       - path: /*
         name: X-Frame-Options

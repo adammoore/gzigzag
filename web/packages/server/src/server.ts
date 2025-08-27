@@ -19,14 +19,16 @@ const io = new SocketIOServer(httpServer, {
   }
 });
 
-// Database connections
-const pgPool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME || 'zigzag_db',
-  user: process.env.DB_USER || 'zigzag_user',
-  password: process.env.DB_PASSWORD || 'zigzag_password'
-});
+// Database connections - handle both URL and individual config
+const pgPool = process.env.DATABASE_URL 
+  ? new Pool({ connectionString: process.env.DATABASE_URL })
+  : new Pool({
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '5432'),
+      database: process.env.DB_NAME || 'zigzag_db',
+      user: process.env.DB_USER || 'zigzag_user',
+      password: process.env.DB_PASSWORD || 'zigzag_password'
+    });
 
 const neo4jDriver = neo4j.driver(
   process.env.NEO4J_URI || 'bolt://localhost:7687',
@@ -36,10 +38,13 @@ const neo4jDriver = neo4j.driver(
   )
 );
 
-const redis = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379')
-});
+// Redis connection - handle both URL and host/port config
+const redis = process.env.REDIS_URL 
+  ? new Redis(process.env.REDIS_URL)
+  : new Redis({
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT || '6379')
+    });
 
 // Middleware
 app.use(cors({

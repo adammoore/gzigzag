@@ -2,13 +2,16 @@ import { Pool } from 'pg';
 import fs from 'fs';
 import path from 'path';
 
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME || 'zigzag',
-  user: process.env.DB_USER || 'zigzag_user',
-  password: process.env.DB_PASSWORD || 'zigzag_password'
-});
+// Handle both DATABASE_URL and individual config
+const pool = process.env.DATABASE_URL 
+  ? new Pool({ connectionString: process.env.DATABASE_URL })
+  : new Pool({
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '5432'),
+      database: process.env.DB_NAME || 'zigzag_db',
+      user: process.env.DB_USER || 'zigzag_user',
+      password: process.env.DB_PASSWORD || 'zigzag_password'
+    });
 
 async function runMigrations() {
   console.log('Running database migrations...');

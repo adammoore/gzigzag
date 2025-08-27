@@ -3,7 +3,7 @@ services:
     image: postgres:15-alpine
     container_name: zigzag-postgres
     environment:
-      POSTGRES_DB: zigzag
+      POSTGRES_DB: zigzag_db
       POSTGRES_USER: zigzag_user
       POSTGRES_PASSWORD: zigzag_password
     ports:
@@ -11,7 +11,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U zigzag_user -d zigzag"]
+      test: ["CMD-SHELL", "pg_isready -U zigzag_user -d zigzag_db"]
       interval: 10s
       timeout: 5s
       retries: 5
