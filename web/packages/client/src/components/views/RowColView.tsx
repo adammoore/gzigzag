@@ -193,7 +193,7 @@ function buildGrid(
     const row: (ZZCell | null)[] = [];
     
     // For each column position
-    colRank.forEach((colCell, colIndex) => {
+    colRank.forEach((_, colIndex) => {
       // Find cell at intersection
       let intersectionCell: ZZCell | null = null;
       

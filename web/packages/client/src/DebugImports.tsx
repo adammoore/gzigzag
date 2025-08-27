@@ -16,7 +16,7 @@ const DebugCoreImports: React.FC = () => {
         
         setCoreModule(coreImport);
         
-        if (coreImport.createKrebsCycleDemo && coreImport.createBlankSpace) {
+        if (coreImport.createKrebsCycleDemo && typeof coreImport.createBlankSpace === 'function') {
           console.log('✅ Core functions available');
           
           // Test creating demo space
@@ -33,7 +33,7 @@ const DebugCoreImports: React.FC = () => {
         }
       } catch (error) {
         console.error('❌ Import failed:', error);
-        setImportStatus(`❌ Import failed: ${error.message}`);
+        setImportStatus(`❌ Import failed: ${(error as Error)?.message || error}`);
       }
     };
 

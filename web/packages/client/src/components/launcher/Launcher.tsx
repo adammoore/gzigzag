@@ -4,27 +4,34 @@ import { FileLoadDialog } from '../file';
 import './Launcher.css';
 
 interface LaunchOption {
-  id: 'demo' | 'blank' | 'load';
+  id: 'krebs' | 'adam_chem' | 'blank' | 'load';
   title: string;
   description: string;
   icon: string;
 }
 
 interface LauncherProps {
-  onLaunchDemo: () => void;
+  onLaunchKrebsDemo: () => void;
+  onLaunchAdamChemDemo: () => void;
   onLaunchBlank: () => void;
-  onFileLoad: (loadedSpace: ZZSpace) => void;
+  onFileLoad?: (loadedSpace: ZZSpace) => void;
 }
 
-export const Launcher: React.FC<LauncherProps> = ({ onLaunchDemo, onLaunchBlank, onFileLoad }) => {
+export const Launcher: React.FC<LauncherProps> = ({ onLaunchKrebsDemo, onLaunchAdamChemDemo, onLaunchBlank }) => {
   const [selectedOption, setSelectedOption] = useState<LaunchOption['id'] | null>(null);
   const [showFileDialog, setShowFileDialog] = useState(false);
 
   const options: LaunchOption[] = [
     {
-      id: 'demo',
-      title: 'Krebs Cycle Demo',
-      description: 'Start with the biochemistry demonstration showing the Krebs cycle with multi-dimensional connections',
+      id: 'adam_chem',
+      title: "Adam's Chemistry Demo",
+      description: 'Comprehensive biochemistry space with periodic table, Krebs cycle, protein databases, and journal references',
+      icon: '⚛️'
+    },
+    {
+      id: 'krebs',
+      title: 'Simple Krebs Cycle Demo',
+      description: 'Basic biochemistry demonstration showing the Krebs cycle with multi-dimensional connections',
       icon: '🧬'
     },
     {
@@ -49,8 +56,10 @@ export const Launcher: React.FC<LauncherProps> = ({ onLaunchDemo, onLaunchBlank,
   };
 
   const handleLaunch = () => {
-    if (selectedOption === 'demo') {
-      onLaunchDemo();
+    if (selectedOption === 'adam_chem') {
+      onLaunchAdamChemDemo();
+    } else if (selectedOption === 'krebs') {
+      onLaunchKrebsDemo();
     } else if (selectedOption === 'blank') {
       onLaunchBlank();
     } else if (selectedOption === 'load') {
@@ -68,7 +77,7 @@ export const Launcher: React.FC<LauncherProps> = ({ onLaunchDemo, onLaunchBlank,
       // const loadedSpace = await loadGZZFiles(files);
       
       // For now, create a demo space to show that it works
-      onLaunchDemo(); // Temporary - replace with onFileLoad(loadedSpace)
+      onLaunchAdamChemDemo(); // Temporary - replace with onFileLoad(loadedSpace)
     } catch (error) {
       console.error('Failed to load files:', error);
     }
@@ -120,7 +129,7 @@ export const Launcher: React.FC<LauncherProps> = ({ onLaunchDemo, onLaunchBlank,
       {showFileDialog && (
         <FileLoadDialog
           onLoad={handleFileLoad}
-          onCancel={() => setShowFileDialog(false)}
+          onClose={() => setShowFileDialog(false)}
         />
       )}
     </div>

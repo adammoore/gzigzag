@@ -1,9 +1,9 @@
 // Dual-pane navigation hook implementing original GzigZag key bindings
 // File: packages/client/src/hooks/useDualPaneNavigation.ts
 
-import { useEffect } from 'react';
+// import { useEffect } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { ZZSpace, ZZCell } from '@zigzag/core';
+import { ZZSpace } from '@zigzag/core';
 
 type ViewType = 'rank' | 'vanishing' | 'rowcol';
 

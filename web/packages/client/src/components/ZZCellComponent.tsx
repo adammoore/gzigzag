@@ -78,7 +78,7 @@ export const ZZCellComponent: React.FC<ZZCellComponentProps> = ({
   isActive,
   onClick,
   onTextChange,
-  showConnections = false
+  // showConnections = false
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(cell.text);

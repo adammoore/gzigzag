@@ -28,7 +28,7 @@ type DimensionalMapping = {
 interface UseZigZagNavigationProps {
   space: ZZSpace;
   cursor: ZZCursor;
-  setCursor: (cursor: ZZCursor) => void;
+  setCursor: (cursor: ZZCursor | ((prev: ZZCursor) => ZZCursor)) => void;
   dimensionalMapping: DimensionalMapping;
   setDimensionalMapping: (mapping: DimensionalMapping) => void;
 }

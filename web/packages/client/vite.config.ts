@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@zigzag/core': path.resolve(__dirname, '../core/src'),
+      '@zigzag/core': path.resolve(__dirname, '../core/dist'),
     },
   },
   server: {

@@ -142,10 +142,8 @@ export const FileLoadDialog: React.FC<FileLoadDialogProps> = ({ onLoad, onClose 
           ref={fileInputRef}
           type="file"
           multiple
-          webkitdirectory
-          directory=""
+          {...({ webkitdirectory: "" } as any)}
           onChange={handleFileSelect}
-          accept=""
         />
 
         <div style={{ color: '#999', fontSize: '12px', marginBottom: '20px' }}>

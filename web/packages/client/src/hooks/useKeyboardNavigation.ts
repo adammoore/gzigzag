@@ -27,7 +27,7 @@ export const useKeyboardNavigation = ({
     }
   }, [space, cursor, onCursorChange]);
 
-  const rotateDimension = useCallback((axis: 'x' | 'y' | 'z', direction: 1 | -1 = 1) => {
+  const rotateDimension = useCallback((_axis: 'x' | 'y' | 'z', direction: 1 | -1 = 1) => {
     const dimensions = space.getDimensions();
     const currentDimensions = [cursor.dimension]; // For single pane, we track one dimension
     
@@ -170,6 +170,9 @@ export const useKeyboardNavigation = ({
   };
 };
 
+// Global state for marked cells (should ideally be in a context/store)
+const markedCells = new Set<string>();
+
 // Dual pane keyboard navigation (original GzigZag style)
 export const useDualPaneNavigation = ({
   space,
@@ -177,7 +180,7 @@ export const useDualPaneNavigation = ({
   blueCursor,
   onGreenCursorChange,
   onBlueCursorChange,
-  activeCursor = 'blue'
+  // activeCursor = 'blue'
 }: {
   space: ZZSpace;
   greenCursor: ZZCursor;
@@ -228,7 +231,10 @@ export const useDualPaneNavigation = ({
         'e', 'c', 's', 'f', 'd', 'D',
         'i', ',', 'j', 'l', 'k', 'K',
         'X', 'Y', 'Z', 'x', 'y', 'z',
-        'V', 'v', '~', '<', '>'
+        'V', 'v', '~', '<', '>',
+        'n', 'm', 'b', 'h', 'Delete',
+        '-', 't', 'T', '/', 'g',
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
       ];
       
       if (zigzagKeys.includes(e.key)) {
@@ -324,6 +330,400 @@ export const useDualPaneNavigation = ({
           const homeCell = space.getHomeCell();
           onGreenCursorChange({ ...greenCursor, cellId: homeCell.id });
           onBlueCursorChange({ ...blueCursor, cellId: homeCell.id });
+          break;
+
+        // Dimension cycling
+        case 'Tab':
+          e.preventDefault();
+          const allDimensions = space.getDimensions();
+          const blueCurrentDimIndex = allDimensions.indexOf(blueCursor.dimension);
+          const nextBlueDimension = allDimensions[(blueCurrentDimIndex + 1) % allDimensions.length];
+          onBlueCursorChange({ ...blueCursor, dimension: nextBlueDimension });
+          break;
+
+        // Cell creation (n + direction) - Authentic ZigZag command
+        case 'n':
+          e.preventDefault();
+          // Wait for next keypress to get direction
+          const handleCreationDirection = (dirEvent: KeyboardEvent) => {
+            dirEvent.preventDefault();
+            const currentCell = space.getCell(blueCursor.cellId);
+            if (!currentCell) return;
+
+            let dimension = 'd.1';
+            let direction: 1 | -1 = 1;
+            
+            switch (dirEvent.key) {
+              case 'l': case 'ArrowRight':
+                dimension = 'd.1'; direction = 1; break;
+              case 'j': case 'ArrowLeft':
+                dimension = 'd.1'; direction = -1; break;
+              case ',': case 'ArrowDown':
+                dimension = 'd.2'; direction = 1; break;
+              case 'i': case 'ArrowUp':
+                dimension = 'd.2'; direction = -1; break;
+              case 'k':
+                dimension = 'd.3'; direction = 1; break;
+              case 'K':
+                dimension = 'd.3'; direction = -1; break;
+              default:
+                document.removeEventListener('keydown', handleCreationDirection);
+                return;
+            }
+
+            try {
+              const newCell = currentCell.newCell(dimension, direction, '');
+              onBlueCursorChange({ ...blueCursor, cellId: newCell.id });
+            } catch (error) {
+              console.warn('Failed to create cell:', error);
+            }
+            
+            document.removeEventListener('keydown', handleCreationDirection);
+          };
+          
+          document.addEventListener('keydown', handleCreationDirection);
+          break;
+
+        // Cell marking (m) - Authentic ZigZag command  
+        case 'm':
+          e.preventDefault();
+          const cell = space.getCell(blueCursor.cellId);
+          if (cell) {
+            if (markedCells.has(cell.id)) {
+              markedCells.delete(cell.id);
+              console.log(`Unmarked cell: ${cell.text || cell.id}`);
+            } else {
+              markedCells.add(cell.id);
+              console.log(`Marked cell: ${cell.text || cell.id}`);
+            }
+          }
+          break;
+
+        // Break connection (b + direction)
+        case 'b':
+          e.preventDefault();
+          const handleBreakDirection = (dirEvent: KeyboardEvent) => {
+            dirEvent.preventDefault();
+            const currentCell = space.getCell(blueCursor.cellId);
+            if (!currentCell) return;
+
+            let dimension = 'd.1';
+            let direction: 1 | -1 = 1;
+            
+            switch (dirEvent.key) {
+              case 'l': case 'ArrowRight':
+                dimension = 'd.1'; direction = 1; break;
+              case 'j': case 'ArrowLeft':
+                dimension = 'd.1'; direction = -1; break;
+              case ',': case 'ArrowDown':
+                dimension = 'd.2'; direction = 1; break;
+              case 'i': case 'ArrowUp':
+                dimension = 'd.2'; direction = -1; break;
+              case 'k':
+                dimension = 'd.3'; direction = 1; break;
+              case 'K':
+                dimension = 'd.3'; direction = -1; break;
+              default:
+                document.removeEventListener('keydown', handleBreakDirection);
+                return;
+            }
+
+            try {
+              const targetCell = currentCell.step(dimension, direction);
+              if (targetCell) {
+                // Break connection by excising the target cell
+                targetCell.excise(dimension);
+                console.log(`Broke connection in direction ${dimension}`);
+              }
+            } catch (error) {
+              console.warn('Failed to break connection:', error);
+            }
+            
+            document.removeEventListener('keydown', handleBreakDirection);
+          };
+          
+          document.addEventListener('keydown', handleBreakDirection);
+          break;
+
+        // Hop cell (h + direction) - swap positions
+        case 'h':
+          e.preventDefault();
+          const handleHopDirection = (dirEvent: KeyboardEvent) => {
+            dirEvent.preventDefault();
+            const currentCell = space.getCell(blueCursor.cellId);
+            if (!currentCell) return;
+
+            let dimension = 'd.1';
+            let direction: 1 | -1 = 1;
+            
+            switch (dirEvent.key) {
+              case 'l': case 'ArrowRight':
+                dimension = 'd.1'; direction = 1; break;
+              case 'j': case 'ArrowLeft':
+                dimension = 'd.1'; direction = -1; break;
+              case ',': case 'ArrowDown':
+                dimension = 'd.2'; direction = 1; break;
+              case 'i': case 'ArrowUp':
+                dimension = 'd.2'; direction = -1; break;
+              case 'k':
+                dimension = 'd.3'; direction = 1; break;
+              case 'K':
+                dimension = 'd.3'; direction = -1; break;
+              default:
+                document.removeEventListener('keydown', handleHopDirection);
+                return;
+            }
+
+            try {
+              const targetCell = currentCell.step(dimension, direction);
+              if (targetCell) {
+                // Hop operation: swap positions of current and target cell
+                console.log(`Hopped cell ${currentCell.text} with ${targetCell.text}`);
+                // TODO: Implement actual cell position swapping
+              }
+            } catch (error) {
+              console.warn('Failed to hop cell:', error);
+            }
+            
+            document.removeEventListener('keydown', handleHopDirection);
+          };
+          
+          document.addEventListener('keydown', handleHopDirection);
+          break;
+
+        // Delete cell (Delete key)
+        case 'Delete':
+          e.preventDefault();
+          const cellToDelete = space.getCell(blueCursor.cellId);
+          if (cellToDelete) {
+            // Try to move cursor following priority: X-, X+, Y-, Y+, Z-, Z+, home
+            const moveOptions = [
+              { dim: 'd.1', dir: -1 as 1 | -1 }, { dim: 'd.1', dir: 1 as 1 | -1 },
+              { dim: 'd.2', dir: -1 as 1 | -1 }, { dim: 'd.2', dir: 1 as 1 | -1 },
+              { dim: 'd.3', dir: -1 as 1 | -1 }, { dim: 'd.3', dir: 1 as 1 | -1 }
+            ];
+            
+            let newCell = null;
+            for (const option of moveOptions) {
+              newCell = cellToDelete.step(option.dim, option.dir);
+              if (newCell) break;
+            }
+            
+            if (!newCell) {
+              newCell = space.getHomeCell();
+            }
+            
+            // Move cursor before deleting
+            onBlueCursorChange({ ...blueCursor, cellId: newCell.id });
+            
+            // Delete the cell
+            space.deleteCell(cellToDelete.id);
+            console.log(`Deleted cell: ${cellToDelete.text || cellToDelete.id}`);
+          }
+          break;
+
+        // Connection command (- + direction to connect marked cells)
+        case '-':
+          e.preventDefault();
+          const handleConnectionDirection = (dirEvent: KeyboardEvent) => {
+            dirEvent.preventDefault();
+            const currentCell = space.getCell(blueCursor.cellId);
+            if (!currentCell) return;
+
+            let dimension = 'd.1';
+            let direction: 1 | -1 = 1;
+            
+            switch (dirEvent.key) {
+              case 'l': case 'ArrowRight':
+                dimension = 'd.1'; direction = 1; break;
+              case 'j': case 'ArrowLeft':
+                dimension = 'd.1'; direction = -1; break;
+              case ',': case 'ArrowDown':
+                dimension = 'd.2'; direction = 1; break;
+              case 'i': case 'ArrowUp':
+                dimension = 'd.2'; direction = -1; break;
+              case 'k':
+                dimension = 'd.3'; direction = 1; break;
+              case 'K':
+                dimension = 'd.3'; direction = -1; break;
+              default:
+                document.removeEventListener('keydown', handleConnectionDirection);
+                return;
+            }
+
+            try {
+              // Connect current cell to the first marked cell in specified direction
+              if (markedCells.size > 0) {
+                const markedCellId = Array.from(markedCells)[0];
+                const markedCell = space.getCell(markedCellId);
+                if (markedCell) {
+                  if (direction > 0) {
+                    currentCell.connect(dimension, markedCell);
+                  } else {
+                    markedCell.connect(dimension, currentCell);
+                  }
+                  console.log(`Connected ${currentCell.text || currentCell.id} to ${markedCell.text || markedCell.id} in ${dimension} (dir: ${direction})`);
+                  markedCells.delete(markedCellId); // Clear mark after connection
+                } else {
+                  console.warn('Marked cell not found');
+                }
+              } else {
+                console.warn('No marked cells to connect to');
+              }
+            } catch (error) {
+              console.warn('Failed to connect cells:', error);
+            }
+            
+            document.removeEventListener('keydown', handleConnectionDirection);
+          };
+          
+          document.addEventListener('keydown', handleConnectionDirection);
+          break;
+
+        // Clone cell (t + direction) and (T + direction)
+        case 't':
+          e.preventDefault();
+          const handleCloneDirection = (dirEvent: KeyboardEvent) => {
+            dirEvent.preventDefault();
+            const currentCell = space.getCell(blueCursor.cellId);
+            if (!currentCell) return;
+
+            let dimension = 'd.1';
+            let direction: 1 | -1 = 1;
+            
+            switch (dirEvent.key) {
+              case 'l': case 'ArrowRight':
+                dimension = 'd.1'; direction = 1; break;
+              case 'j': case 'ArrowLeft':
+                dimension = 'd.1'; direction = -1; break;
+              case ',': case 'ArrowDown':
+                dimension = 'd.2'; direction = 1; break;
+              case 'i': case 'ArrowUp':
+                dimension = 'd.2'; direction = -1; break;
+              case 'k':
+                dimension = 'd.3'; direction = 1; break;
+              case 'K':
+                dimension = 'd.3'; direction = -1; break;
+              default:
+                document.removeEventListener('keydown', handleCloneDirection);
+                return;
+            }
+
+            try {
+              // Create a new cell with same content
+              const newCell = currentCell.newCell(dimension, direction, currentCell.text || '');
+              onBlueCursorChange({ ...blueCursor, cellId: newCell.id });
+              console.log(`Cloned cell: ${currentCell.text || currentCell.id}`);
+            } catch (error) {
+              console.warn('Failed to clone cell:', error);
+            }
+            
+            document.removeEventListener('keydown', handleCloneDirection);
+          };
+          
+          document.addEventListener('keydown', handleCloneDirection);
+          break;
+
+        case 'T':
+          e.preventDefault();
+          const handleDeepCloneDirection = (dirEvent: KeyboardEvent) => {
+            dirEvent.preventDefault();
+            const currentCell = space.getCell(blueCursor.cellId);
+            if (!currentCell) return;
+
+            let dimension = 'd.1';
+            let direction: 1 | -1 = 1;
+            
+            switch (dirEvent.key) {
+              case 'l': case 'ArrowRight':
+                dimension = 'd.1'; direction = 1; break;
+              case 'j': case 'ArrowLeft':
+                dimension = 'd.1'; direction = -1; break;
+              case ',': case 'ArrowDown':
+                dimension = 'd.2'; direction = 1; break;
+              case 'i': case 'ArrowUp':
+                dimension = 'd.2'; direction = -1; break;
+              case 'k':
+                dimension = 'd.3'; direction = 1; break;
+              case 'K':
+                dimension = 'd.3'; direction = -1; break;
+              default:
+                document.removeEventListener('keydown', handleDeepCloneDirection);
+                return;
+            }
+
+            try {
+              // Deep clone - create cell with content and try to preserve some connections
+              const newCell = currentCell.newCell(dimension, direction, currentCell.text || '');
+              onBlueCursorChange({ ...blueCursor, cellId: newCell.id });
+              console.log(`Deep cloned cell: ${currentCell.text || currentCell.id}`);
+            } catch (error) {
+              console.warn('Failed to deep clone cell:', error);
+            }
+            
+            document.removeEventListener('keydown', handleDeepCloneDirection);
+          };
+          
+          document.addEventListener('keydown', handleDeepCloneDirection);
+          break;
+
+        // Cursor coordination between views (/ + direction)
+        case '/':
+          e.preventDefault();
+          const handleCoordinationDirection = (dirEvent: KeyboardEvent) => {
+            dirEvent.preventDefault();
+            let dimension = 'd.1';
+            let direction: 1 | -1 = 1;
+            
+            switch (dirEvent.key) {
+              case 'l': case 'ArrowRight':
+                dimension = 'd.1'; direction = 1; break;
+              case 'j': case 'ArrowLeft':
+                dimension = 'd.1'; direction = -1; break;
+              case ',': case 'ArrowDown':
+                dimension = 'd.2'; direction = 1; break;
+              case 'i': case 'ArrowUp':
+                dimension = 'd.2'; direction = -1; break;
+              case 'k':
+                dimension = 'd.3'; direction = 1; break;
+              case 'K':
+                dimension = 'd.3'; direction = -1; break;
+              default:
+                document.removeEventListener('keydown', handleCoordinationDirection);
+                return;
+            }
+
+            try {
+              // Coordinate cursors - move green cursor to blue cursor's neighbor
+              const blueCell = space.getCell(blueCursor.cellId);
+              if (blueCell) {
+                const targetCell = blueCell.step(dimension, direction);
+                if (targetCell) {
+                  onGreenCursorChange({ ...greenCursor, cellId: targetCell.id });
+                  console.log(`Coordinated green cursor to ${dimension} ${direction} of blue`);
+                }
+              }
+            } catch (error) {
+              console.warn('Failed to coordinate cursors:', error);
+            }
+            
+            document.removeEventListener('keydown', handleCoordinationDirection);
+          };
+          
+          document.addEventListener('keydown', handleCoordinationDirection);
+          break;
+
+        // Cell ID buffer and goto commands
+        case '0': case '1': case '2': case '3': case '4':
+        case '5': case '6': case '7': case '8': case '9':
+          // TODO: Implement cell ID buffer system
+          console.log(`Added ${e.key} to cell ID buffer`);
+          break;
+          
+        case 'g':
+          e.preventDefault();
+          // TODO: Go to cell by ID in buffer (view 1)
+          console.log('Go to cell by ID (not implemented)');
           break;
       }
     };

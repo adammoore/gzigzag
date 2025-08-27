@@ -128,7 +128,6 @@ const AxisLabel = styled.div<{ position: 'top' | 'left' | 'right' }>`
 export const DimensionalRankView: React.FC<DimensionalViewProps> = ({
   space,
   cursor,
-  dimensionalMapping,
   onCellClick,
   onCellDoubleClick
 }) => {
@@ -254,7 +253,7 @@ export const DimensionalVanishingView: React.FC<DimensionalViewProps> = ({
     x1: number; y1: number; x2: number; y2: number; color: string;
   }> = [];
 
-  cellsToRender.forEach(({ cell, x, y, position }) => {
+  cellsToRender.forEach(({ cell, x, y }) => {
     // Check connections along each dimension
     const dimensions = [
       { name: dimensionalMapping.x, color: '#ff6666' },

@@ -247,7 +247,7 @@ export const VanishingView: React.FC<VanishingViewProps> = ({
         })}
 
         {/* Render cells */}
-        {visibleCells.map((item, index) => (
+        {visibleCells.map((item) => (
           <CellPosition
             key={`${item.cell.id}-${item.pos.dx}-${item.pos.dy}-${item.pos.dz}`}
             x={item.x - 60} // Center the cell

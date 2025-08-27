@@ -63,11 +63,11 @@ export const RankView: React.FC<RankViewProps> = ({
 
   // Build grid from origin
   const grid: Array<Array<any>> = [];
-  let currentRowStart = originCell;
+  let currentRowStart: any = originCell;
   
   for (let row = 0; row < GRID_SIZE; row++) {
     const gridRow: Array<any> = [];
-    let currentCellInRow = currentRowStart;
+    let currentCellInRow: any = currentRowStart;
     
     for (let col = 0; col < GRID_SIZE; col++) {
       gridRow.push(currentCellInRow);

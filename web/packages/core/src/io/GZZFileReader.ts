@@ -46,7 +46,7 @@ export class GZZFileReader {
         stats: this.generateStats(cellsData)
       };
     } catch (error) {
-      this.errors.push(`Failed to load Z directory: ${error.message}`);
+      this.errors.push(`Failed to load Z directory: ${(error as Error)?.message || error}`);
       throw error;
     }
   }
@@ -62,7 +62,7 @@ export class GZZFileReader {
         const cellData = await this.parseCellDirectory(cellId, cellFiles);
         cellsData.set(cellId, cellData);
       } catch (error) {
-        this.errors.push(`Failed to parse cell ${cellId}: ${error.message}`);
+        this.errors.push(`Failed to parse cell ${cellId}: ${(error as Error)?.message || error}`);
       }
     }
     
@@ -140,7 +140,7 @@ export class GZZFileReader {
         targetCellId: targetId
       };
     } catch (error) {
-      this.warnings.push(`Failed to parse connection file ${file.name}: ${error.message}`);
+      this.warnings.push(`Failed to parse connection file ${file.name}: ${(error as Error)?.message || error}`);
       return null;
     }
   }

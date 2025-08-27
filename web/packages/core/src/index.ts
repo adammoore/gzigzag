@@ -6,6 +6,7 @@ export type DimensionName = string;
 export type Direction = 1 | -1;
 
 export * from './io';
+export { createAdamChemDemo, animateAdamChemDemo } from './demos/AdamChemDemo';
 
 export class ZigZagError extends Error {
   constructor(message: string) {
@@ -78,10 +79,28 @@ export class ZZCell {
   newCell(dimension: DimensionName, direction: Direction = 1, text: string = ''): ZZCell {
     const newCell = new ZZCell(this._space, text);
     
-    if (direction > 0) {
-      this.connect(dimension, newCell);
+    // Check if there's already a connection in this direction
+    const existingTarget = this.step(dimension, direction);
+    
+    if (existingTarget) {
+      // Insert the new cell between this cell and the existing target
+      this.disconnect(dimension, direction);
+      existingTarget.disconnect(dimension, (-direction) as Direction);
+      
+      if (direction > 0) {
+        this.connect(dimension, newCell);
+        newCell.connect(dimension, existingTarget);
+      } else {
+        newCell.connect(dimension, this);
+        existingTarget.connect(dimension, newCell);
+      }
     } else {
-      newCell.connect(dimension, this);
+      // No existing connection, create direct connection
+      if (direction > 0) {
+        this.connect(dimension, newCell);
+      } else {
+        newCell.connect(dimension, this);
+      }
     }
     
     return newCell;
@@ -200,7 +219,7 @@ export class ZZCell {
     return result;
   }
 
-  setSpace(space: ZZSpace): void {
+  setSpace(_space: ZZSpace): void {
     // Already handled in constructor
   }
 }
@@ -289,7 +308,7 @@ export class ZZSpace {
     }
   }
 
-  disconnectCells(fromId: string, toId: string, dimension: string): boolean {
+  disconnectCells(fromId: string, _toId: string, dimension: string): boolean {
     const fromCell = this._cells.get(fromId);
     if (!fromCell) return false;
     
@@ -393,8 +412,13 @@ function runDemo(): void {
 
   // Your biochemistry demo!
   console.log('\n🧬 Biochemistry Demo (recreating your YouTube video):');
-  const biochemSpace = createKrebsCycleDemo();
-  const cyclePath = animateKrebsCycle(biochemSpace);
+  const biochemSpace = new ZZSpace('demo_krebs');
+  // Create a simplified cycle for demo purposes
+  const home = biochemSpace.getHomeCell();
+  home.text = 'Krebs Cycle Demo';
+  const acetyl = home.newCell('d.krebs', 1, 'Acetyl-CoA');
+  const citrate = acetyl.newCell('d.krebs', 1, 'Citrate');
+  const cyclePath = [home.id, acetyl.id, citrate.id];
   
   console.log('Krebs Cycle Animation Path:');
   cyclePath.forEach((cellId, index) => {
@@ -510,7 +534,7 @@ export function createBlankSpace(): ZZSpace {
   // This follows the original GzigZag pattern of having some cells to start with
   const cell1 = homeCell.newCell('d.1', 1, 'Cell 1');
   const cell2 = cell1.newCell('d.1', 1, 'Cell 2');
-  const cell3 = cell2.newCell('d.1', 1, 'Cell 3');
+  cell2.newCell('d.1', 1, 'Cell 3');
 
   return space;
 }

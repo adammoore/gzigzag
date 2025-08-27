@@ -1,19 +1,37 @@
-# ZigZag Web - Modern Implementation
+# GzigZag Web - Authentic Recreation
 
 ## Overview
-Modern web implementation of Ted Nelson's ZigZag hyperdimensional data structure with real-time collaboration.
+Faithful web recreation of Ted Nelson's original GzigZag hyperdimensional data structure (1990s-2000s era). Features authentic dual-pane interface, complete keyboard command set, and Adam's comprehensive chemistry demonstration.
+
+## ✨ Key Features
+
+### 🎯 Authentic GzigZag Experience
+- **Dual-Pane Interface**: Original yellow control pane and gray data pane
+- **Complete Keyboard Commands**: All essential ZigZag operations (`n`, `m`, `b`, `h`, `-`, `t`, `/`, etc.)
+- **Original Visual Design**: Faithful recreation of 1990s-2000s GzigZag appearance
+- **3D Vanishing View**: Manhattan distance algorithm with proper perspective
+
+### 🧬 Adam's Chemistry Demo
+- **Comprehensive Biochemistry**: Periodic table, Krebs cycle, protein databases
+- **Multi-Dimensional Structure**: Complex chemical relationships in ZigZag space
+- **Original Recreation**: Faithfully recreates Adam's original YouTube demonstration
+
+### 🔧 Advanced Cell Operations
+- **Smart Cell Creation**: Proper insertion in existing chains
+- **Cell Marking System**: Visual feedback with authentic styling
+- **Connection Management**: Directional linking with semantic dimensions
+- **Cell Manipulation**: Clone, hop, break, and coordinate operations
 
 ## Technology Stack
-- **Frontend**: React 18, TypeScript, Vite, TailwindCSS
-- **Backend**: Node.js, Express, Socket.io
-- **Databases**: PostgreSQL (primary), Neo4j (graph), Redis (cache)
-- **Deployment**: Render.com, Docker
+- **Frontend**: React 18, TypeScript, Vite
+- **Styling**: Authentic CSS (original GzigZag color scheme)
+- **Core Engine**: Custom ZigZag implementation in TypeScript
+- **Development**: Hot reloading, modern toolchain
 
 ## Local Development
 
 ### Prerequisites
 - Node.js 18+
-- Docker Desktop
 - Git
 
 ### Quick Start
@@ -25,205 +43,137 @@ cd gzigzag/web
 # Install dependencies
 npm install
 
-# Start Docker containers
-docker compose up -d
-
-# Run database migrations
-npm run migrate
-
-# Start development servers
+# Start development server
 npm run dev
 ```
 
+**Open http://localhost:3000** and experience authentic GzigZag!
+
 ### Available Scripts
-- `npm run dev` - Start both frontend and backend in dev mode
+- `npm run dev` - Start development server (frontend only)
 - `npm run build:all` - Build all packages for production
-- `npm run migrate` - Run database migrations
-- `npm run docker:up` - Start Docker containers
-- `npm run docker:down` - Stop Docker containers
 - `npm run test` - Run all tests
 
-## API Endpoints
+## 🎮 Usage Guide
 
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
-- `GET /api/auth/verify` - Verify JWT token
+### Getting Started
+1. **Launch Options**: Choose from Adam's Chemistry Demo, Simple Krebs Cycle, Blank Space, or Load Z Directory
+2. **Interface**: Dual-pane layout with green cursor (control) and blue cursor (data) 
+3. **Navigation**: Use authentic keyboard commands (press `?` for help)
 
-### Spaces
-- `GET /api/spaces` - Get user's spaces
-- `POST /api/spaces` - Create new space
-- `GET /api/spaces/:id` - Get space details
-- `PUT /api/spaces/:id` - Update space
-- `DELETE /api/spaces/:id` - Delete space
+### Essential Keyboard Commands
 
-### Cells
-- `GET /api/spaces/:spaceId/cells` - Get cells in space
-- `POST /api/spaces/:spaceId/cells` - Create new cell
-- `PUT /api/cells/:id` - Update cell
-- `DELETE /api/cells/:id` - Delete cell
+#### Cursor Navigation
+- **Green Cursor (Control Pane)**: `e`/`c` (up/down), `s`/`f` (left/right), `D`/`d` (Z-axis)
+- **Blue Cursor (Data Pane)**: `i`/`,` (up/down), `j`/`l` (left/right), `K`/`k` (Z-axis)
+- **Cursor Coordination**: `~` (swap), `<`/`>` (jump between cursors)
 
-### Connections
-- `GET /api/spaces/:spaceId/connections` - Get connections
-- `POST /api/spaces/:spaceId/connections` - Create connection
-- `DELETE /api/connections/:id` - Delete connection
+#### Cell Operations
+- **Create Cell**: `n` + direction arrow
+- **Mark/Unmark**: `m` (toggles marking on current cell)
+- **Connect Cells**: `-` + direction (connects to marked cell)
+- **Delete Cell**: `Delete` (smart cursor positioning)
+- **Clone Cell**: `t` + direction (shallow), `T` + direction (deep)
 
-## WebSocket Events
+#### Advanced Operations
+- **Break Connection**: `b` + direction
+- **Hop Cell**: `h` + direction (swap positions)
+- **Coordinate Cursors**: `/` + direction
+- **Edit Cell**: Double-click cell or use edit mode
 
-### Client -> Server
-- `join:space` - Join a space for real-time updates
-- `leave:space` - Leave a space
-- `cell:update` - Update cell content
-- `cell:move` - Move cell position
-- `connection:create` - Create new connection
-- `connection:delete` - Delete connection
+### Demos Available
+1. **Adam's Chemistry Demo** 🧬: Full biochemistry with periodic table, Krebs cycle, cofactors
+2. **Simple Krebs Cycle** 🔬: Basic biochemistry demonstration  
+3. **Blank Space** 📄: Empty space for experimentation
+4. **Load Z Directory** 📁: Import original GzigZag files
 
-### Server -> Client
-- `cell:created` - New cell created
-- `cell:updated` - Cell content updated
-- `cell:moved` - Cell position changed
-- `cell:deleted` - Cell removed
-- `connection:created` - New connection created
-- `connection:deleted` - Connection removed
+## 🏗️ Architecture
 
-## Deployment
+### Core Components
+1. **ZZSpace**: Container for cells and dimensions
+2. **ZZCell**: Individual data nodes with connections
+3. **Dimensions**: Named connection types (d.1, d.2, d.3, custom dimensions)
+4. **Views**: Different ways to visualize the space (Rank, Vanishing, RowCol)
 
-### Deploy to Render.com
+### Data Structure
+- **Cells**: Unique ID, text content, dimensional connections
+- **Connections**: Directional links between cells in named dimensions
+- **Authentic Rules**: One positive/negative connection per cell per dimension
 
-1. **Create GitHub Repository**
-   ```bash
-   git remote add origin https://github.com/adammoore/gzigzag.git
-   git push -u origin phase-4c-cloud-deployment
-   ```
+## 🔧 Development
 
-2. **Setup Neo4j AuraDB**
-   - Create account at https://neo4j.com/cloud/aura/
-   - Create new database instance
-   - Save connection credentials
-
-3. **Deploy on Render**
-   - Connect GitHub repository
-   - Use `render.yaml` for configuration
-   - Set environment variables:
-     - `JWT_SECRET` (generate secure key)
-     - `NEO4J_URI` (from AuraDB)
-     - `NEO4J_USER` (from AuraDB)
-     - `NEO4J_PASSWORD` (from AuraDB)
-
-4. **Post-Deployment**
-   ```bash
-   # Run migrations (via Render shell)
-   npm run migrate
-   
-   # Verify deployment
-   curl https://your-app.onrender.com/health
-   ```
-
-## Environment Variables
-
-### Development (.env)
+### Project Structure
 ```
-NODE_ENV=development
-PORT=3001
-CLIENT_URL=http://localhost:5173
-JWT_SECRET=dev-secret-key
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=zigzag_db
-DB_USER=zigzag_user
-DB_PASSWORD=zigzag_password
-NEO4J_URI=bolt://localhost:7687
-NEO4J_USER=neo4j
-NEO4J_PASSWORD=zigzag_password
-REDIS_HOST=localhost
-REDIS_PORT=6379
+packages/
+├── core/           # ZigZag engine (TypeScript)
+├── client/         # React frontend
+└── server/         # Node.js backend (optional)
 ```
 
-### Production (Render)
-All sensitive values should be set via Render dashboard.
-
-## Architecture
-
-### Data Flow
-1. Client makes request to Express API
-2. API validates JWT token via middleware
-3. Data persisted to PostgreSQL
-4. Graph relationships stored in Neo4j
-5. Cache updated in Redis
-6. WebSocket broadcasts changes to connected clients
-
-### Security
-- JWT authentication with 7-day expiry
-- Bcrypt password hashing
-- CORS configuration
-- Input validation
-- SQL injection prevention via parameterized queries
-
-## Testing
-
-### Unit Tests
+### Building
 ```bash
-npm run test:core
-npm run test:server
-npm run test:client
+# Build all packages
+npm run build:all
+
+# Development mode (with hot reloading)
+npm run dev
 ```
 
-### Integration Tests
+## 🐛 Troubleshooting
+
+### Common Issues
 ```bash
-# Start test environment
-docker compose -f docker-compose.test.yml up -d
-
-# Run integration tests
-npm run test:integration
-```
-
-### Manual Testing
-1. Open http://localhost:5173
-2. Register new account
-3. Create space
-4. Add cells and connections
-5. Open second browser for collaboration testing
-
-## Troubleshooting
-
-### Docker Issues
-```bash
-# Reset all containers
-docker compose down -v
-docker compose up -d --build
-
-# View logs
-docker compose logs -f [service]
-```
-
-### Database Issues
-```bash
-# Connect to PostgreSQL
-docker compose exec postgres psql -U zigzag_user -d zigzag_db
-
-# Connect to Neo4j
-# Open http://localhost:7474
-# Login with neo4j/zigzag_password
-```
-
-### Build Issues
-```bash
-# Clean install
+# Build errors - clean install
 rm -rf node_modules package-lock.json
 rm -rf packages/*/node_modules packages/*/package-lock.json
 npm install
 npm run build:all
+
+# Port conflicts - change port
+export PORT=3001 && npm run dev
 ```
 
-## Contributing
-1. Fork repository
-2. Create feature branch
-3. Make changes
-4. Run tests
-5. Submit pull request
+### Connection Errors
+- Check dimension names are consistent
+- Verify no duplicate connections per dimension
+- Use semantic dimensions for complex structures
 
-## License
-MIT
+## 🎯 Roadmap
 
-## Acknowledgments
-Based on Ted Nelson's original ZigZag concept.
+### Completed ✅
+- [x] Authentic dual-pane interface
+- [x] Complete keyboard command set
+- [x] Adam's comprehensive chemistry demo
+- [x] Smart cell insertion and connection management
+- [x] Original visual design recreation
+- [x] 3D vanishing view with perspective
+- [x] Cell marking and manipulation system
+
+### Future Enhancements 🚀
+- [ ] Z directory import/export functionality
+- [ ] Multi-user collaboration
+- [ ] Plugin system for custom views
+- [ ] Performance optimizations for large spaces
+- [ ] Mobile/touch interface adaptation
+
+## 🤝 Contributing
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Make changes and test thoroughly
+4. Commit with descriptive message
+5. Push to branch (`git push origin feature/amazing-feature`)
+6. Open Pull Request
+
+## 📜 License
+MIT License - see LICENSE file for details
+
+## 🙏 Acknowledgments
+- **Ted Nelson** - Original ZigZag concept and vision
+- **Adam Vials Moore** - Chemistry demo recreation and implementation
+- **Original GzigZag Team** - Reference implementation and documentation
+
+---
+
+**"The best way to predict the future is to invent it."** - Ted Nelson
+
+*Experience the revolutionary hyperdimensional data structure that was ahead of its time.*

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { ZZSpace, ZZCell, createKrebsCycleDemo, createBlankSpace } from '@zigzag/core';
+import { useState } from 'react';
+import { ZZSpace, createKrebsCycleDemo, createBlankSpace, createAdamChemDemo } from '@zigzag/core';
 import { DualPaneWorkspace } from './components/DualPaneWorkspace';
+import { OriginalDualPaneWorkspace } from './components/OriginalDualPaneWorkspace';
 import { Launcher } from './components/launcher';
 import { ZigZagSpace } from './components/ZigZagSpace';
 import { ViewControls } from './components/ViewControls';
@@ -15,9 +16,11 @@ export type ZZCursor = {
 };
 
 export type AppMode = 'launcher' | 'singlePane' | 'dualPane';
+export type Theme = 'modern' | 'original';
 
 function App() {
   const [mode, setMode] = useState<AppMode>('launcher');
+  const [theme, setTheme] = useState<Theme>('original'); // Default to original theme
   const [space, setSpace] = useState<ZZSpace | null>(null);
   
   // Dual pane cursors
@@ -40,8 +43,15 @@ function App() {
     setSingleCursor({ ...initialCursor });
   };
 
-  const handleLaunchDemo = () => {
+  const handleLaunchKrebsDemo = () => {
     const demoSpace = createKrebsCycleDemo();
+    setSpace(demoSpace);
+    initializeCursors(demoSpace);
+    setMode('dualPane');
+  };
+
+  const handleLaunchAdamChemDemo = () => {
+    const demoSpace = createAdamChemDemo();
     setSpace(demoSpace);
     initializeCursors(demoSpace);
     setMode('dualPane');
@@ -76,11 +86,16 @@ function App() {
     setMode('dualPane');
   };
 
+  const toggleTheme = () => {
+    setTheme(theme === 'modern' ? 'original' : 'modern');
+  };
+
   // Launcher mode
   if (mode === 'launcher') {
     return (
       <Launcher
-        onLaunchDemo={handleLaunchDemo}
+        onLaunchKrebsDemo={handleLaunchKrebsDemo}
+        onLaunchAdamChemDemo={handleLaunchAdamChemDemo}
         onLaunchBlank={handleLaunchBlank}
         onFileLoad={handleFileLoad}
       />
@@ -114,7 +129,17 @@ function App() {
               onClick={handleSwitchToDualPane}
               className={mode === 'dualPane' ? 'active' : ''}
             >
-              Dual Pane (Original)
+              Dual Pane
+            </button>
+            <button 
+              onClick={toggleTheme}
+              style={{
+                background: theme === 'original' ? '#ffff99' : '#444',
+                color: theme === 'original' ? '#000' : '#fff',
+                border: theme === 'original' ? '2px outset #c0c0c0' : 'none'
+              }}
+            >
+              {theme === 'original' ? 'Original GZZ' : 'Modern'}
             </button>
           </div>
         </div>
@@ -122,13 +147,23 @@ function App() {
       
       <main className="app-main">
         {mode === 'dualPane' ? (
-          <DualPaneWorkspace
-            space={space}
-            greenCursor={greenCursor}
-            blueCursor={blueCursor}
-            onGreenCursorChange={setGreenCursor}
-            onBlueCursorChange={setBlueCursor}
-          />
+          theme === 'original' ? (
+            <OriginalDualPaneWorkspace
+              space={space}
+              greenCursor={greenCursor}
+              blueCursor={blueCursor}
+              onGreenCursorChange={setGreenCursor}
+              onBlueCursorChange={setBlueCursor}
+            />
+          ) : (
+            <DualPaneWorkspace
+              space={space}
+              greenCursor={greenCursor}
+              blueCursor={blueCursor}
+              onGreenCursorChange={setGreenCursor}
+              onBlueCursorChange={setBlueCursor}
+            />
+          )
         ) : (
           <>
             <ViewControls 
@@ -150,7 +185,7 @@ function App() {
           Current: {space.getCell(
             mode === 'dualPane' ? blueCursor.cellId : singleCursor.cellId
           )?.text} | 
-          Mode: {mode === 'dualPane' ? 'Dual Pane (Original GzigZag)' : 'Single Pane'} |
+          Mode: {mode === 'dualPane' ? `Dual Pane (${theme === 'original' ? 'Original GZZ' : 'Modern'})` : 'Single Pane'} |
           Dimension: {mode === 'dualPane' ? blueCursor.dimension : singleCursor.dimension} | 
           View: {mode === 'dualPane' ? blueCursor.viewType : singleCursor.viewType}
         </p>
