@@ -4,7 +4,10 @@ import { ZZCursor } from '../App';
 import { useDualPaneNavigation } from '../hooks/useKeyboardNavigation';
 import { useSpaceSystem } from '../hooks/useSpaceSystem';
 import { OriginalVanishingView } from './views/OriginalVanishingView';
+import { OriginalStretchVanishingView } from './views/OriginalStretchVanishingView';
 import { OriginalRankView } from './views/OriginalRankView';
+import { OriginalRowView } from './views/OriginalRowView';
+import { OriginalColumnView } from './views/OriginalColumnView';
 import { OriginalRowColView } from './views/OriginalRowColView';
 import '../themes/originalGzigZag.css';
 
@@ -68,15 +71,6 @@ export const OriginalDualPaneWorkspace: React.FC<OriginalDualPaneWorkspaceProps>
     }
     
     switch (cursor.viewType) {
-      case 'rank':
-        return (
-          <OriginalRankView
-            space={space}
-            cursor={cursor}
-            onCursorChange={onCursorChange}
-            cursorType={paneType}
-          />
-        );
       case 'vanishing':
         return (
           <OriginalVanishingView
@@ -86,9 +80,36 @@ export const OriginalDualPaneWorkspace: React.FC<OriginalDualPaneWorkspaceProps>
             cursorType={paneType}
           />
         );
-      case 'rowcol':
+      case 'stretchvanishing':
         return (
-          <OriginalRowColView
+          <OriginalStretchVanishingView
+            space={space}
+            cursor={cursor}
+            onCursorChange={onCursorChange}
+            cursorType={paneType}
+          />
+        );
+      case 'row':
+        return (
+          <OriginalRowView
+            space={space}
+            cursor={cursor}
+            onCursorChange={onCursorChange}
+            cursorType={paneType}
+          />
+        );
+      case 'column':
+        return (
+          <OriginalColumnView
+            space={space}
+            cursor={cursor}
+            onCursorChange={onCursorChange}
+            cursorType={paneType}
+          />
+        );
+      case 'rank':
+        return (
+          <OriginalRankView
             space={space}
             cursor={cursor}
             onCursorChange={onCursorChange}
@@ -100,6 +121,7 @@ export const OriginalDualPaneWorkspace: React.FC<OriginalDualPaneWorkspaceProps>
           <div className="original-view-error">
             <div>Unknown view type: {cursor.viewType}</div>
             <div>Available views: {systemConfig.availableViews.join(', ')}</div>
+            <div>Authentic GZZ views: vanishing, stretchvanishing, row, column, rank</div>
           </div>
         );
     }

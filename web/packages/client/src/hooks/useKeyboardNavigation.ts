@@ -41,7 +41,7 @@ export const useKeyboardNavigation = ({
   }, [space, cursor, onCursorChange]);
 
   const switchView = useCallback((direction: 1 | -1 = 1) => {
-    const viewTypes: ViewType[] = ['rank', 'vanishing', 'rowcol'];
+    const viewTypes: ViewType[] = ['vanishing', 'stretchvanishing', 'row', 'column', 'rank'];
     const currentIndex = viewTypes.indexOf(cursor.viewType);
     let nextIndex = currentIndex + direction;
     
@@ -293,17 +293,17 @@ export const useDualPaneNavigation = ({
           jumpBlueToGreen();
           break;
 
-        // View switching
+        // View switching (authentic GZZ order)
         case 'V':
           // Switch green pane view
-          const greenViews: ViewType[] = ['rank', 'vanishing', 'rowcol'];
+          const greenViews: ViewType[] = ['vanishing', 'stretchvanishing', 'row', 'column', 'rank'];
           const greenIndex = greenViews.indexOf(greenCursor.viewType);
           const nextGreenIndex = (greenIndex + 1) % greenViews.length;
           onGreenCursorChange({ ...greenCursor, viewType: greenViews[nextGreenIndex] });
           break;
         case 'v':
           // Switch blue pane view
-          const blueViews: ViewType[] = ['rank', 'vanishing', 'rowcol'];
+          const blueViews: ViewType[] = ['vanishing', 'stretchvanishing', 'row', 'column', 'rank'];
           const blueIndex = blueViews.indexOf(blueCursor.viewType);
           const nextBlueIndex = (blueIndex + 1) % blueViews.length;
           onBlueCursorChange({ ...blueCursor, viewType: blueViews[nextBlueIndex] });

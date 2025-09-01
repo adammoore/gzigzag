@@ -16,7 +16,7 @@ export interface SpaceSystemConfig {
 export const useSpaceSystem = (space: ZZSpace | null): SpaceSystemConfig => {
   const [config, setConfig] = useState<SpaceSystemConfig>({
     availableDimensions: ['d.1', 'd.2', 'd.3'], // Default fallback
-    availableViews: ['vanishing', 'rank', 'rowcol'],
+    availableViews: ['vanishing', 'stretchvanishing', 'row', 'column', 'rank'],
     availableActions: ['edit', 'mark', 'connect', 'break', 'hop'],
     currentBindings: ['normal']
   });
@@ -82,18 +82,28 @@ export const useSpaceSystem = (space: ZZSpace | null): SpaceSystemConfig => {
                   case 'vanishing':
                     views.push('vanishing');
                     break;
+                  case 'stretchvanishing':
+                    views.push('stretchvanishing');
+                    break;
                   case 'row':
+                    views.push('row');
+                    break;
                   case 'column':
-                  case 'rowcol':
-                    if (!views.includes('rowcol')) {
-                      views.push('rowcol');
-                    }
+                    views.push('column');
                     break;
                   case 'rank':
                     views.push('rank');
                     break;
                   default:
-                    views.push(viewName);
+                    // Try to match by lowercase for flexibility
+                    const lowercaseName = viewName.toLowerCase();
+                    if (lowercaseName.includes('vanish') && lowercaseName.includes('stretch')) {
+                      views.push('stretchvanishing');
+                    } else if (lowercaseName.includes('vanish')) {
+                      views.push('vanishing');
+                    } else {
+                      views.push(viewName as any);
+                    }
                 }
               }
               viewCell = viewCell.step('d.2', 1);
@@ -122,7 +132,7 @@ export const useSpaceSystem = (space: ZZSpace | null): SpaceSystemConfig => {
 
         setConfig({
           availableDimensions: dimensions.length > 0 ? dimensions : space.getDimensions(),
-          availableViews: views.length > 0 ? views : ['vanishing', 'rank', 'rowcol'],
+          availableViews: views.length > 0 ? views : ['vanishing', 'stretchvanishing', 'row', 'column', 'rank'],
           availableActions: actions.length > 0 ? actions : ['edit', 'mark', 'connect', 'break', 'hop'],
           currentBindings: bindings.length > 0 ? bindings : ['normal']
         });

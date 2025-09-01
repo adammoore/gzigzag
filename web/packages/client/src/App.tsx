@@ -8,7 +8,7 @@ import { ViewControls } from './components/ViewControls';
 import './App.css';
 
 // Types
-export type ViewType = 'rank' | 'vanishing' | 'rowcol';
+export type ViewType = 'vanishing' | 'stretchvanishing' | 'row' | 'column' | 'rank';
 export type ZZCursor = {
   cellId: string;
   dimension: string;
@@ -35,7 +35,7 @@ function App() {
     const initialCursor: ZZCursor = {
       cellId: homeCell.id,
       dimension: 'd.1',
-      viewType: 'rank'
+      viewType: 'vanishing'
     };
     
     setGreenCursor({ ...initialCursor });
