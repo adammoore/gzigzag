@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ZZSpace } from '@zigzag/core';
 import { ZZCursor } from '../App';
 import { useDualPaneNavigation } from '../hooks/useKeyboardNavigation';
+import { useSpaceSystem } from '../hooks/useSpaceSystem';
 import { OriginalVanishingView } from './views/OriginalVanishingView';
 import { OriginalRankView } from './views/OriginalRankView';
 import { OriginalRowColView } from './views/OriginalRowColView';
@@ -24,6 +25,9 @@ export const OriginalDualPaneWorkspace: React.FC<OriginalDualPaneWorkspaceProps>
 }) => {
   const [activeCursor, setActiveCursor] = useState<'green' | 'blue'>('blue');
   const [showKeyHints, setShowKeyHints] = useState(true);
+
+  // Read system configuration from the space structure
+  const systemConfig = useSpaceSystem(space);
 
   // Initialize dual pane keyboard navigation
   useDualPaneNavigation({
@@ -52,6 +56,16 @@ export const OriginalDualPaneWorkspace: React.FC<OriginalDualPaneWorkspaceProps>
 
   const renderView = (cursor: ZZCursor, paneType: 'green' | 'blue') => {
     const onCursorChange = paneType === 'green' ? onGreenCursorChange : onBlueCursorChange;
+    
+    // Check if the view is available in the system configuration
+    if (!systemConfig.availableViews.includes(cursor.viewType)) {
+      return (
+        <div className="original-view-error">
+          <div>View "{cursor.viewType}" not available</div>
+          <div>Available views: {systemConfig.availableViews.join(', ')}</div>
+        </div>
+      );
+    }
     
     switch (cursor.viewType) {
       case 'rank':
@@ -82,7 +96,12 @@ export const OriginalDualPaneWorkspace: React.FC<OriginalDualPaneWorkspaceProps>
           />
         );
       default:
-        return <div>Unknown view type</div>;
+        return (
+          <div className="original-view-error">
+            <div>Unknown view type: {cursor.viewType}</div>
+            <div>Available views: {systemConfig.availableViews.join(', ')}</div>
+          </div>
+        );
     }
   };
 
@@ -96,8 +115,12 @@ export const OriginalDualPaneWorkspace: React.FC<OriginalDualPaneWorkspaceProps>
         <div className="original-pane-header control">
           <div className="original-pane-title">Ctrl</div>
           <div className="original-status">
-            <div className="dimension-indicator">{greenCursor.dimension}</div>
-            <div className="view-indicator">{greenCursor.viewType.toUpperCase()}</div>
+            <div className="dimension-indicator" title={`Available dimensions: ${systemConfig.availableDimensions.join(', ')}`}>
+              {greenCursor.dimension}
+            </div>
+            <div className="view-indicator" title={`Available views: ${systemConfig.availableViews.join(', ')}`}>
+              {greenCursor.viewType.toUpperCase()}
+            </div>
           </div>
         </div>
 
@@ -130,8 +153,12 @@ export const OriginalDualPaneWorkspace: React.FC<OriginalDualPaneWorkspaceProps>
         <div className="original-pane-header data">
           <div className="original-pane-title">Data</div>
           <div className="original-status">
-            <div className="dimension-indicator">{blueCursor.dimension}</div>
-            <div className="view-indicator">{blueCursor.viewType.toUpperCase()}</div>
+            <div className="dimension-indicator" title={`Available dimensions: ${systemConfig.availableDimensions.join(', ')}`}>
+              {blueCursor.dimension}
+            </div>
+            <div className="view-indicator" title={`Available views: ${systemConfig.availableViews.join(', ')}`}>
+              {blueCursor.viewType.toUpperCase()}
+            </div>
             <div className="window-controls">
               <div 
                 className="window-control"
@@ -214,8 +241,8 @@ export const OriginalDualPaneWorkspace: React.FC<OriginalDualPaneWorkspaceProps>
           <div className="keyhint-section">
             <div className="keyhint-title">EDITING:</div>
             <div>Double-click = edit text</div>
-            <div>F1/F2/F3 = rank/vanish/rowcol</div>
-            <div>Tab = cycle dimensions</div>
+            <div>F1/F2/F3 = {systemConfig.availableViews.join('/')}</div>
+            <div>Tab = cycle dimensions ({systemConfig.availableDimensions.length})</div>
             <div>0-9, g = goto cell by ID</div>
           </div>
           
