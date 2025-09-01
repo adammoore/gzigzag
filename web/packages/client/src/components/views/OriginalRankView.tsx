@@ -55,11 +55,11 @@ export const OriginalRankView: React.FC<OriginalRankViewProps> = ({
       {/* Rank header */}
       <div style={{
         fontSize: '11px',
-        color: '#333',
-        fontFamily: 'monospace',
+        color: 'var(--gzz-text-primary)',
+        fontFamily: 'var(--gzz-mono-font)',
         marginBottom: '8px',
         textAlign: 'center',
-        borderBottom: '1px solid #ddd',
+        borderBottom: '1px solid var(--gzz-cell-border)',
         paddingBottom: '4px'
       }}>
         RANK VIEW: {cursor.dimension} ({rank.length} cells)
@@ -82,23 +82,15 @@ export const OriginalRankView: React.FC<OriginalRankViewProps> = ({
             {/* Position indicator */}
             <div style={{
               fontSize: '8px',
-              color: '#888',
-              fontFamily: 'monospace',
+              color: 'var(--gzz-text-secondary)',
+              fontFamily: 'var(--gzz-mono-font)',
               marginBottom: '2px'
             }}>
               [{index}]
             </div>
             
             {/* Cell */}
-            <div style={{
-              border: cell.id === cursor.cellId 
-                ? `2px solid ${cursorType === 'green' ? '#4CAF50' : '#2196F3'}`
-                : '1px solid #ccc',
-              borderRadius: '4px',
-              boxShadow: cell.id === cursor.cellId 
-                ? `0 0 4px ${cursorType === 'green' ? '#4CAF50' : '#2196F3'}`
-                : 'none'
-            }}>
+            <div>
               <OriginalZZCell
                 cell={cell}
                 isActive={cell.id === cursor.cellId}
@@ -111,9 +103,9 @@ export const OriginalRankView: React.FC<OriginalRankViewProps> = ({
             {/* Connection arrow */}
             {index < rank.length - 1 && (
               <div style={{
-                color: '#666',
+                color: 'var(--gzz-connection-line)',
                 fontSize: '12px',
-                fontFamily: 'monospace',
+                fontFamily: 'var(--gzz-mono-font)',
                 marginTop: '2px'
               }}>
                 ↓
@@ -132,12 +124,11 @@ export const OriginalRankView: React.FC<OriginalRankViewProps> = ({
           right: '8px',
           textAlign: 'center',
           fontSize: '9px',
-          color: '#666',
-          fontFamily: 'monospace',
-          background: 'rgba(255,255,255,0.9)',
+          color: 'var(--gzz-text-primary)',
+          fontFamily: 'var(--gzz-mono-font)',
+          background: 'var(--gzz-cell-bg)',
           padding: '4px',
-          borderRadius: '3px',
-          border: '1px solid #ddd'
+          border: '1px solid var(--gzz-cell-border)'
         }}>
           Position {currentIndex + 1} of {rank.length} on {cursor.dimension}
         </div>

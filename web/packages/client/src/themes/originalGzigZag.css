@@ -168,15 +168,17 @@
   color: black;
 }
 
-/* Active cell highlighting */
+/* Active cell highlighting - much more prominent like original GZZ */
 .original-cell.active-green {
-  border: 2px solid var(--gzz-cursor-green);
-  border-style: solid;
+  border: 3px solid var(--gzz-cursor-green) !important;
+  box-shadow: 0 0 0 1px var(--gzz-cursor-green) !important;
+  background: rgba(0, 128, 0, 0.1);
 }
 
 .original-cell.active-blue {
-  border: 2px solid var(--gzz-cursor-blue);
-  border-style: solid;
+  border: 3px solid var(--gzz-cursor-blue) !important;
+  box-shadow: 0 0 0 1px var(--gzz-cursor-blue) !important;
+  background: rgba(0, 0, 255, 0.1);
 }
 
 /* Special cell content styling */

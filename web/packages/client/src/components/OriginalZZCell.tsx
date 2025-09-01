@@ -60,25 +60,33 @@ export const OriginalZZCell: React.FC<OriginalZZCellProps> = ({
     setShowTooltipState(false);
   };
 
-  // Determine cell class based on content and state - authentic GzigZag styling
+  // Determine cell class based on authentic GzigZag styling
   let cellClass = 'original-cell';
   
-  // Apply authentic cell colors based on content
+  // Apply authentic cell colors - simpler, more faithful to original
   const cellText = cell.text.toLowerCase();
-  if (cellText.includes('action') || cellText.includes('flobtviews') || cellText.includes('allflobtviews')) {
-    cellClass += ' green-action';
-  } else if (cellText.includes('stretch') || cellText.includes('vanish')) {
-    cellClass += ' stretch-cell';
-  } else if (cellText.includes('d.') || cellText.match(/^[xyz]$/)) {
-    cellClass += ' dimension-cell';
-  } else if (cell.text && cell.text.length > 0) {
-    // Regular content cells
-    cellClass += ' blue-cell';
-  }
   
-  // Apply cursor highlighting
+  // Dimension cells (d.1, d.2, d.3, etc.) - always red
+  if (cellText.match(/^d\.\d+$/) || cellText.match(/^[xyz]$/)) {
+    cellClass += ' dimension-cell';
+  }
+  // Action/system cells - green background
+  else if (cellText.includes('action') || cellText.includes('views') || cellText.includes('bindings') || cellText.includes('dimlists')) {
+    cellClass += ' green-action';
+  }
+  // Stretch/vanishing view cells - light blue
+  else if (cellText.includes('stretch') || cellText.includes('vanish')) {
+    cellClass += ' stretch-cell';
+  }
+  // Regular content cells - keep white background, distinguish with border only
+  
+  // Apply cursor highlighting - make it much more prominent
   if (isActive) {
-    cellClass += cursorType === 'green' ? ' active-green' : ' active-blue';
+    if (cursorType === 'green') {
+      cellClass += ' active-green';
+    } else {
+      cellClass += ' active-blue';
+    }
   }
   
   // Apply marked cell styling

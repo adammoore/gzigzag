@@ -81,12 +81,12 @@ export const OriginalRowColView: React.FC<OriginalRowColViewProps> = ({
       {/* Header */}
       <div style={{
         fontSize: '10px',
-        color: '#333',
-        fontFamily: 'monospace',
+        color: 'var(--gzz-text-primary)',
+        fontFamily: 'var(--gzz-mono-font)',
         textAlign: 'center',
         marginBottom: '6px',
         padding: '4px',
-        borderBottom: '1px solid #ddd'
+        borderBottom: '1px solid var(--gzz-cell-border)'
       }}>
         ROWCOL VIEW: {xDimension} (→) × {yDimension} (↓) • {populatedCells} cells
       </div>
@@ -108,10 +108,10 @@ export const OriginalRowColView: React.FC<OriginalRowColViewProps> = ({
           {Array(GRID_SIZE).fill(0).map((_, col) => (
             <div key={`col-${col}`} style={{
               fontSize: '8px',
-              color: '#888',
+              color: 'var(--gzz-text-secondary)',
               textAlign: 'center',
-              fontFamily: 'monospace',
-              background: col === centerCol ? '#e8f5e8' : 'transparent'
+              fontFamily: 'var(--gzz-mono-font)',
+              background: col === centerCol ? 'var(--gzz-cell-stretch)' : 'transparent'
             }}>
               {col - centerCol >= 0 ? `+${col - centerCol}` : col - centerCol}
             </div>
@@ -129,11 +129,11 @@ export const OriginalRowColView: React.FC<OriginalRowColViewProps> = ({
             <div style={{
               width: '24px',
               fontSize: '8px',
-              color: '#888',
+              color: 'var(--gzz-text-secondary)',
               textAlign: 'center',
-              fontFamily: 'monospace',
+              fontFamily: 'var(--gzz-mono-font)',
               marginRight: '4px',
-              background: rowIndex === centerRow ? '#e8f5e8' : 'transparent'
+              background: rowIndex === centerRow ? 'var(--gzz-cell-stretch)' : 'transparent'
             }}>
               {rowIndex - centerRow >= 0 ? `+${rowIndex - centerRow}` : rowIndex - centerRow}
             </div>
@@ -153,14 +153,13 @@ export const OriginalRowColView: React.FC<OriginalRowColViewProps> = ({
                       key={`empty-${rowIndex}-${colIndex}`}
                       style={{
                         minHeight: '32px',
-                        border: isCenter ? '2px dashed #999' : '1px dashed #ddd',
-                        background: isCenter ? '#f0f8ff' : '#f9f9f9',
-                        borderRadius: '3px',
+                        border: isCenter ? '2px dashed var(--gzz-text-secondary)' : '1px dashed var(--gzz-cell-border)',
+                        background: isCenter ? 'var(--gzz-cell-stretch)' : 'var(--gzz-window-bg)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         fontSize: '10px',
-                        color: '#ccc'
+                        color: 'var(--gzz-text-secondary)'
                       }}
                     >
                       {isCenter ? '∅' : ''}
@@ -175,18 +174,7 @@ export const OriginalRowColView: React.FC<OriginalRowColViewProps> = ({
                     key={cell.id} 
                     style={{
                       position: 'relative',
-                      border: isActiveCursor 
-                        ? `3px solid ${cursorType === 'green' ? '#4CAF50' : '#2196F3'}`
-                        : isCenter 
-                        ? '2px solid #ff9800'
-                        : '1px solid #ddd',
-                      borderRadius: '4px',
-                      boxShadow: isActiveCursor 
-                        ? `0 0 6px ${cursorType === 'green' ? '#4CAF50' : '#2196F3'}`
-                        : isCenter
-                        ? '0 0 3px #ff9800'
-                        : 'none',
-                      background: isCenter && !isActiveCursor ? '#fff3e0' : 'white'
+                      background: isCenter && !isActiveCursor ? 'var(--gzz-cell-stretch)' : 'transparent'
                     }}
                   >
                     <OriginalZZCell
@@ -204,7 +192,7 @@ export const OriginalRowColView: React.FC<OriginalRowColViewProps> = ({
                         top: '2px',
                         right: '2px',
                         fontSize: '8px',
-                        color: '#ff9800',
+                        color: 'var(--gzz-dimension-indicator)',
                         fontWeight: 'bold'
                       }}>
                         ⊕
@@ -224,8 +212,8 @@ export const OriginalRowColView: React.FC<OriginalRowColViewProps> = ({
         top: '32px',
         right: '8px',
         fontSize: '9px',
-        color: '#666',
-        fontFamily: 'monospace',
+        color: 'var(--gzz-text-secondary)',
+        fontFamily: 'var(--gzz-mono-font)',
         textAlign: 'right',
         lineHeight: '12px'
       }}>
@@ -243,12 +231,11 @@ export const OriginalRowColView: React.FC<OriginalRowColViewProps> = ({
         right: '8px',
         textAlign: 'center',
         fontSize: '9px',
-        color: '#666',
-        fontFamily: 'monospace',
-        background: 'rgba(255,255,255,0.9)',
+        color: 'var(--gzz-text-primary)',
+        fontFamily: 'var(--gzz-mono-font)',
+        background: 'var(--gzz-cell-bg)',
         padding: '4px',
-        borderRadius: '3px',
-        border: '1px solid #ddd'
+        border: '1px solid var(--gzz-cell-border)'
       }}>
         {GRID_SIZE}×{GRID_SIZE} grid • {populatedCells} populated • Cursor at center
       </div>
