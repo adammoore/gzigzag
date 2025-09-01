@@ -238,6 +238,60 @@ app.post('/api/spaces', authenticateToken, async (req: AuthRequest, res) => {
   }
 });
 
+// Export space as ZigZag format
+app.get('/api/spaces/:spaceId/export', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    // Get space info
+    const spaceResult = await pgPool.query(
+      'SELECT * FROM spaces WHERE id = \$1 AND (owner_id = \$2 OR id IN (SELECT space_id FROM permissions WHERE user_id = \$2))',
+      [req.params.spaceId, req.user?.id]
+    );
+    
+    if (spaceResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Space not found or access denied' });
+    }
+    
+    const space = spaceResult.rows[0];
+    
+    // Get all cells
+    const cellsResult = await pgPool.query(
+      'SELECT * FROM cells WHERE space_id = \$1',
+      [req.params.spaceId]
+    );
+    
+    // Get all connections
+    const connectionsResult = await pgPool.query(
+      'SELECT * FROM connections WHERE space_id = \$1',
+      [req.params.spaceId]
+    );
+    
+    // Format as ZigZag export
+    const exportData = {
+      name: space.name,
+      cells: cellsResult.rows.map(cell => ({
+        id: cell.id,
+        text: cell.content || '',
+        metadata: cell.metadata || {}
+      })),
+      connections: connectionsResult.rows.map(conn => ({
+        from: conn.from_cell_id,
+        to: conn.to_cell_id,
+        dimension: conn.dimension || 'd.1',
+        metadata: conn.metadata || {}
+      })),
+      dimensions: ['d.1', 'd.2', 'd.3'],
+      homeCell: cellsResult.rows[0]?.id,
+      timestamp: new Date().toISOString(),
+      version: '4.0.0'
+    };
+    
+    res.json(exportData);
+  } catch (error) {
+    console.error('Error exporting space:', error);
+    res.status(500).json({ error: 'Failed to export space' });
+  }
+});
+
 // Cells routes
 app.get('/api/spaces/:spaceId/cells', authenticateToken, async (req: AuthRequest, res) => {
   try {

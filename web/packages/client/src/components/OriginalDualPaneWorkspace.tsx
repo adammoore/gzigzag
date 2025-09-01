@@ -219,6 +219,12 @@ export const OriginalDualPaneWorkspace: React.FC<OriginalDualPaneWorkspaceProps>
             <div>0-9, g = goto cell by ID</div>
           </div>
           
+          <div className="keyhint-section">
+            <div className="keyhint-title">SAVE/LOAD:</div>
+            <div>s = save space as ZIP</div>
+            <div>z = load Z directory/ZIP</div>
+          </div>
+          
           <div style={{ fontSize: '8px', marginTop: '8px', textAlign: 'center' }}>
             Click ? again to hide • Click pane to activate cursor
           </div>

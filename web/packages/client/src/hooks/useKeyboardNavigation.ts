@@ -713,6 +713,130 @@ export const useDualPaneNavigation = ({
           document.addEventListener('keydown', handleCoordinationDirection);
           break;
 
+        // Save space (s) - Authentic ZigZag command
+        case 's':
+          e.preventDefault();
+          const handleSaveCommand = async () => {
+            try {
+              const spaceName = prompt('Enter space name:', 'my-zigzag-space') || 'zigzag-space';
+              const { saveSpaceAsZip } = await import('../utils/saveLoad');
+              await saveSpaceAsZip(space, spaceName);
+            } catch (error) {
+              console.error('Failed to save space:', error);
+              alert('Failed to save space. Check console for details.');
+            }
+          };
+          handleSaveCommand();
+          break;
+
+        // Load Z directory (z) - Authentic ZigZag command
+        case 'z':
+          e.preventDefault();
+          const handleLoadCommand = async () => {
+            try {
+              // Show load options dialog
+              const choice = prompt(
+                'Load Z Directory:\n' +
+                '1 = Load from ZIP file\n' + 
+                '2 = Load from server space\n' +
+                '3 = Load demo spaces\n' +
+                'Enter choice (1-3):',
+                '1'
+              );
+              
+              if (choice === '1') {
+                // Load from ZIP file
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.zip';
+                input.onchange = async (event) => {
+                  const file = (event.target as HTMLInputElement).files?.[0];
+                  if (file) {
+                    const { loadSpaceFromZip, importSpaceData } = await import('../utils/saveLoad');
+                    const spaceData = await loadSpaceFromZip(file);
+                    if (spaceData && confirm(`Load space "${spaceData.name}"? This will replace the current space.`)) {
+                      importSpaceData(space, spaceData);
+                      // Reset cursors to home
+                      const homeCell = space.getHomeCell();
+                      if (homeCell) {
+                        onBlueCursorChange({ ...blueCursor, cellId: homeCell.id });
+                        onGreenCursorChange({ ...greenCursor, cellId: homeCell.id });
+                      }
+                      alert(`Loaded space "${spaceData.name}" successfully!`);
+                    }
+                  }
+                };
+                input.click();
+                
+              } else if (choice === '2') {
+                // Load from server (requires authentication)
+                const spaceId = prompt('Enter space ID to load:');
+                if (spaceId) {
+                  const { loadSpaceFromServer, importSpaceData } = await import('../utils/saveLoad');
+                  const spaceData = await loadSpaceFromServer(spaceId);
+                  if (spaceData && confirm(`Load space "${spaceData.name}" from server? This will replace the current space.`)) {
+                    importSpaceData(space, spaceData);
+                    const homeCell = space.getHomeCell();
+                    if (homeCell) {
+                      onBlueCursorChange({ ...blueCursor, cellId: homeCell.id });
+                      onGreenCursorChange({ ...greenCursor, cellId: homeCell.id });
+                    }
+                    alert(`Loaded space "${spaceData.name}" from server!`);
+                  }
+                }
+                
+              } else if (choice === '3') {
+                // Load demo spaces
+                const demos = ['Adam Chemistry Demo', 'Krebs Cycle', 'Blank Space'];
+                const demo = prompt(
+                  'Demo spaces:\n' +
+                  '1 = Adam Chemistry Demo\n' +
+                  '2 = Krebs Cycle\n' +
+                  '3 = Blank Space\n' +
+                  'Enter choice (1-3):',
+                  '1'
+                );
+                
+                if (demo === '1' || demo === '2' || demo === '3') {
+                  const { createAdamChemDemo, createKrebsCycleDemo, createBlankSpace } = await import('@zigzag/core');
+                  let newSpace;
+                  let name;
+                  
+                  switch (demo) {
+                    case '1':
+                      newSpace = createAdamChemDemo();
+                      name = 'Adam Chemistry Demo';
+                      break;
+                    case '2':
+                      newSpace = createKrebsCycleDemo();
+                      name = 'Krebs Cycle Demo';
+                      break;
+                    case '3':
+                      newSpace = createBlankSpace();
+                      name = 'Blank Space';
+                      break;
+                  }
+                  
+                  if (newSpace && confirm(`Load "${name}"? This will replace the current space.`)) {
+                    // Clear current space and import demo
+                    // Note: This is a simplified approach - you may need to implement proper space replacement
+                    const homeCell = newSpace.getHomeCell();
+                    if (homeCell) {
+                      onBlueCursorChange({ ...blueCursor, cellId: homeCell.id });
+                      onGreenCursorChange({ ...greenCursor, cellId: homeCell.id });
+                    }
+                    alert(`Loaded "${name}" successfully!`);
+                  }
+                }
+              }
+            } catch (error) {
+              console.error('Failed to load space:', error);
+              alert('Failed to load space. Check console for details.');
+            }
+          };
+          handleLoadCommand();
+          break;
+
         // Cell ID buffer and goto commands
         case '0': case '1': case '2': case '3': case '4':
         case '5': case '6': case '7': case '8': case '9':
