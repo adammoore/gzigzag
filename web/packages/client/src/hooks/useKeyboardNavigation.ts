@@ -713,8 +713,8 @@ export const useDualPaneNavigation = ({
           document.addEventListener('keydown', handleCoordinationDirection);
           break;
 
-        // Save space (s) - Authentic ZigZag command
-        case 's':
+        // Save space (S) - Authentic ZigZag command
+        case 'S':
           e.preventDefault();
           const handleSaveCommand = async () => {
             try {
@@ -787,7 +787,6 @@ export const useDualPaneNavigation = ({
                 
               } else if (choice === '3') {
                 // Load demo spaces
-                const demos = ['Adam Chemistry Demo', 'Krebs Cycle', 'Blank Space'];
                 const demo = prompt(
                   'Demo spaces:\n' +
                   '1 = Adam Chemistry Demo\n' +

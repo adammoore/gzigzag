@@ -221,7 +221,7 @@ export const OriginalDualPaneWorkspace: React.FC<OriginalDualPaneWorkspaceProps>
           
           <div className="keyhint-section">
             <div className="keyhint-title">SAVE/LOAD:</div>
-            <div>s = save space as ZIP</div>
+            <div>S = save space as ZIP</div>
             <div>z = load Z directory/ZIP</div>
           </div>
           

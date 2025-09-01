@@ -1,0 +1,33 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- ZigZag icon representing dimensional connections -->
+  <defs>
+    <linearGradient id="zigzagGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#FFA500;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF6347;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="16" cy="16" r="14" fill="url(#zigzagGradient)" stroke="#333" stroke-width="1"/>
+  
+  <!-- ZigZag dimensional lines -->
+  <!-- Horizontal dimension -->
+  <line x1="6" y1="16" x2="26" y2="16" stroke="#333" stroke-width="2"/>
+  
+  <!-- Vertical dimension -->
+  <line x1="16" y1="6" x2="16" y2="26" stroke="#333" stroke-width="2"/>
+  
+  <!-- Diagonal connections (representing multidimensional links) -->
+  <line x1="10" y1="10" x2="22" y2="22" stroke="#333" stroke-width="1.5" opacity="0.7"/>
+  <line x1="22" y1="10" x2="10" y2="22" stroke="#333" stroke-width="1.5" opacity="0.7"/>
+  
+  <!-- Central cell -->
+  <circle cx="16" cy="16" r="3" fill="#FFD700" stroke="#333" stroke-width="1"/>
+  
+  <!-- Corner cells (representing connected cells) -->
+  <circle cx="8" cy="8" r="2" fill="#87CEEB" stroke="#333" stroke-width="0.5"/>
+  <circle cx="24" cy="8" r="2" fill="#98FB98" stroke="#333" stroke-width="0.5"/>
+  <circle cx="8" cy="24" r="2" fill="#DDA0DD" stroke="#333" stroke-width="0.5"/>
+  <circle cx="24" cy="24" r="2" fill="#F0E68C" stroke="#333" stroke-width="0.5"/>
+</svg>

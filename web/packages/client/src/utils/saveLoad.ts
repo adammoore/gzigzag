@@ -2,6 +2,27 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { ZZSpace } from '@zigzag/core';
 
+// Helper function to get all connections from a space
+const getAllSpaceConnections = (space: ZZSpace): any[] => {
+  const connections: any[] = [];
+  const cells = space.getAllCells();
+  
+  cells.forEach(cell => {
+    const cellConnections = cell.getAllConnections();
+    cellConnections.forEach((targets, dimension) => {
+      targets.forEach(targetId => {
+        connections.push({
+          from: cell.id,
+          to: targetId,
+          dimension
+        });
+      });
+    });
+  });
+  
+  return connections;
+};
+
 // Save ZigZag space to ZIP file
 export const saveSpaceAsZip = async (space: ZZSpace, spaceName: string = 'zigzag-space') => {
   const zip = new JSZip();
@@ -13,13 +34,13 @@ export const saveSpaceAsZip = async (space: ZZSpace, spaceName: string = 'zigzag
       cells: space.getAllCells().map(cell => ({
         id: cell.id,
         text: cell.text,
-        metadata: cell.metadata || {}
+        metadata: {}
       })),
-      connections: space.getAllConnections().map(conn => ({
+      connections: getAllSpaceConnections(space).map((conn: any) => ({
         from: conn.from,
         to: conn.to,
         dimension: conn.dimension,
-        metadata: conn.metadata || {}
+        metadata: {}
       })),
       dimensions: space.getDimensions(),
       homeCell: space.getHomeCell()?.id,
@@ -116,14 +137,14 @@ export const saveSpaceToServer = async (space: ZZSpace, spaceName: string): Prom
       cells: space.getAllCells().map(cell => ({
         id: cell.id,
         text: cell.text,
-        metadata: cell.metadata || {},
+        metadata: {},
         position: { x: 0, y: 0, z: 0 } // Will be calculated by server
       })),
-      connections: space.getAllConnections().map(conn => ({
+      connections: getAllSpaceConnections(space).map((conn: any) => ({
         from: conn.from,
         to: conn.to,
         dimension: conn.dimension,
-        metadata: conn.metadata || {}
+        metadata: {}
       }))
     };
     
@@ -159,10 +180,8 @@ export const importSpaceData = (space: ZZSpace, spaceData: any): boolean => {
     
     // Import cells
     for (const cellData of spaceData.cells) {
-      const cell = space.createCell(cellData.text || '');
-      if (cellData.metadata) {
-        cell.metadata = cellData.metadata;
-      }
+      space.createCell(cellData.text || '');
+      // Note: metadata not supported in current ZZCell implementation
     }
     
     // Import connections
