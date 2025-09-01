@@ -503,6 +503,19 @@ export function createBlankSpace(): ZZSpace {
   dimListLabel.connect('d.2', actionsLabel);
   actionsLabel.connect('d.1', actionsList);
 
+  // Add basic actions available in the system
+  const editAction = new ZZCell(space, 'edit');
+  const markAction = new ZZCell(space, 'mark');
+  const connectAction = new ZZCell(space, 'connect');
+  const breakAction = new ZZCell(space, 'break');
+  const hopAction = new ZZCell(space, 'hop');
+  
+  actionsList.connect('d.2', editAction);
+  editAction.connect('d.2', markAction);
+  markAction.connect('d.2', connectAction);
+  connectAction.connect('d.2', breakAction);
+  breakAction.connect('d.2', hopAction);
+
   // Create Views list structure  
   const viewsLabel = new ZZCell(space, 'Views');
   const viewsList = new ZZCell(space, ''); // Empty cell as list head
@@ -511,11 +524,12 @@ export function createBlankSpace(): ZZSpace {
   viewsLabel.connect('d.1', viewsList);
 
   // Add basic views (following original GzigZag order)
-  const vanishingView = new ZZCell(space, 'Vanishing');
-  const stretchVanishingView = new ZZCell(space, 'StretchVanishing');
-  const rowView = new ZZCell(space, 'Row'); 
-  const columnView = new ZZCell(space, 'Column');
-  const rankView = new ZZCell(space, 'Rank'); 
+  // Use lowercase names to match ViewType exactly
+  const vanishingView = new ZZCell(space, 'vanishing');
+  const stretchVanishingView = new ZZCell(space, 'stretchvanishing');
+  const rowView = new ZZCell(space, 'row'); 
+  const columnView = new ZZCell(space, 'column');
+  const rankView = new ZZCell(space, 'rank'); 
   
   viewsList.connect('d.2', vanishingView);
   vanishingView.connect('d.2', stretchVanishingView);
@@ -525,10 +539,21 @@ export function createBlankSpace(): ZZSpace {
 
   // Create Bindings list structure
   const bindingsLabel = new ZZCell(space, 'Bindings');
-  const bindingsList = new ZZCell(space, 'Normal mode');
+  const bindingsList = new ZZCell(space, ''); // Empty cell as list head
   
   viewsLabel.connect('d.2', bindingsLabel);
   bindingsLabel.connect('d.1', bindingsList);
+
+  // Add keybinding configurations (following original GzigZag pattern)
+  const normalMode = new ZZCell(space, 'normal');
+  const view0Bindings = new ZZCell(space, 'view0:esfcdD'); // Left pane diamond pattern
+  const view1Bindings = new ZZCell(space, 'view1:ijl,kK'); // Right pane diamond pattern
+  const globalBindings = new ZZCell(space, 'global:vxyzVXYZ'); // View switching and dimension rotation
+  
+  bindingsList.connect('d.2', normalMode);
+  normalMode.connect('d.2', view0Bindings);
+  view0Bindings.connect('d.2', view1Bindings);
+  view1Bindings.connect('d.2', globalBindings);
 
   // Create basic cursor
   const cursor1 = new ZZCell(space, 'Cursor-1');

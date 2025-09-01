@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import { ZZSpace } from '@zigzag/core';
 import { ZZCursor, ViewType } from '../App';
+import { useSpaceSystem } from './useSpaceSystem';
 
 interface KeyboardNavigationConfig {
   space: ZZSpace;
@@ -16,6 +17,8 @@ export const useKeyboardNavigation = ({
   onCursorChange,
   isActive = true
 }: KeyboardNavigationConfig) => {
+  // Read dynamic system configuration from space
+  const systemConfig = useSpaceSystem(space);
   
   const navigateInDimension = useCallback((dimension: string, direction: 1 | -1) => {
     const currentCell = space.getCell(cursor.cellId);
@@ -28,28 +31,32 @@ export const useKeyboardNavigation = ({
   }, [space, cursor, onCursorChange]);
 
   const rotateDimension = useCallback((_axis: 'x' | 'y' | 'z', direction: 1 | -1 = 1) => {
-    const dimensions = space.getDimensions();
-    const currentDimensions = [cursor.dimension]; // For single pane, we track one dimension
+    // Use dynamic dimension list from space configuration
+    const dimensions = systemConfig.availableDimensions;
+    if (dimensions.length === 0) return; // No dimensions available
     
-    const currentIndex = dimensions.indexOf(currentDimensions[0]);
+    const currentIndex = dimensions.indexOf(cursor.dimension);
     let nextIndex = currentIndex + direction;
     
     if (nextIndex >= dimensions.length) nextIndex = 0;
     if (nextIndex < 0) nextIndex = dimensions.length - 1;
     
     onCursorChange({ ...cursor, dimension: dimensions[nextIndex] });
-  }, [space, cursor, onCursorChange]);
+  }, [cursor, onCursorChange, systemConfig.availableDimensions]);
 
   const switchView = useCallback((direction: 1 | -1 = 1) => {
-    const viewTypes: ViewType[] = ['vanishing', 'stretchvanishing', 'row', 'column', 'rank'];
-    const currentIndex = viewTypes.indexOf(cursor.viewType);
+    // Use dynamic view list from space configuration
+    const availableViews = systemConfig.availableViews as ViewType[];
+    if (availableViews.length === 0) return; // No views available
+    
+    const currentIndex = availableViews.indexOf(cursor.viewType);
     let nextIndex = currentIndex + direction;
     
-    if (nextIndex >= viewTypes.length) nextIndex = 0;
-    if (nextIndex < 0) nextIndex = viewTypes.length - 1;
+    if (nextIndex >= availableViews.length) nextIndex = 0;
+    if (nextIndex < 0) nextIndex = availableViews.length - 1;
     
-    onCursorChange({ ...cursor, viewType: viewTypes[nextIndex] });
-  }, [cursor, onCursorChange]);
+    onCursorChange({ ...cursor, viewType: availableViews[nextIndex] });
+  }, [cursor, onCursorChange, systemConfig.availableViews]);
 
   const goHome = useCallback(() => {
     const homeCell = space.getHomeCell();

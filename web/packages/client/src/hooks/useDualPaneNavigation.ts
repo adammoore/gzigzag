@@ -4,6 +4,7 @@
 // import { useEffect } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { ZZSpace } from '@zigzag/core';
+import { useSpaceSystem } from './useSpaceSystem';
 
 type ViewType = 'rank' | 'vanishing' | 'rowcol';
 
@@ -29,6 +30,8 @@ interface NavigationHookProps {
 }
 
 export const useDualPaneNavigation = ({ state, setState }: NavigationHookProps) => {
+  // Read dynamic system configuration from space
+  const systemConfig = useSpaceSystem(state.space);
   // Helper function to navigate in a specific direction
   const navigateInDimension = (
     cursor: ZZCursor,
@@ -52,7 +55,10 @@ export const useDualPaneNavigation = ({ state, setState }: NavigationHookProps) 
 
   // Helper function to rotate dimensions
   const rotateDimension = (pane: 'left' | 'right', axis: number, direction: 1 | -1) => {
-    const dimensions = state.space.getDimensions();
+    // Use dynamic dimension list from space configuration
+    const dimensions = systemConfig.availableDimensions;
+    if (dimensions.length === 0) return; // No dimensions available
+    
     const paneKey = pane === 'left' ? 'leftPane' : 'rightPane';
     const currentPane = state[paneKey];
     const currentDim = currentPane.dimensions[axis];
@@ -69,7 +75,10 @@ export const useDualPaneNavigation = ({ state, setState }: NavigationHookProps) 
 
   // Helper function to change view type
   const changeView = (pane: 'left' | 'right', direction: 1 | -1) => {
-    const views: ViewType[] = ['rank', 'vanishing', 'rowcol'];
+    // Use dynamic view list from space configuration
+    const views = systemConfig.availableViews as ViewType[];
+    if (views.length === 0) return; // No views available
+    
     const paneKey = pane === 'left' ? 'leftPane' : 'rightPane';
     const currentPane = state[paneKey];
     const currentIndex = views.indexOf(currentPane.viewType);
