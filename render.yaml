@@ -50,5 +50,5 @@ services:
 databases:
   # PostgreSQL database
   - name: zigzag-db
-    plan: starter
+    plan: free
 
