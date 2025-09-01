@@ -227,4 +227,147 @@ export const graph = {
       await session.close();
     }
   },
+
+  // Sync an entire space structure to Neo4j
+  async syncSpaceToNeo4j(spaceId: string, spaceData: any): Promise<void> {
+    if (!driver) return;
+    const session = driver.session();
+    
+    try {
+      // Start a transaction for atomic operations
+      await session.executeWrite(async tx => {
+        // First, clear existing space data
+        await tx.run(
+          'MATCH (c:Cell {space_id: $spaceId}) DETACH DELETE c',
+          { spaceId }
+        );
+
+        // Create all cells first
+        for (const [cellId, cellData] of Object.entries(spaceData.cells || {})) {
+          await tx.run(
+            `CREATE (c:Cell {
+              id: $cellId, 
+              space_id: $spaceId, 
+              text: $text,
+              created_at: datetime()
+            })`,
+            { 
+              cellId, 
+              spaceId,
+              text: (cellData as any).text || ''
+            }
+          );
+        }
+
+        // Create all connections
+        for (const [cellId, cellData] of Object.entries(spaceData.cells || {})) {
+          const connections = (cellData as any).connections || {};
+          for (const [dimension, connectionData] of Object.entries(connections)) {
+            const conn = connectionData as any;
+            
+            // Create positive connection
+            if (conn.positive) {
+              await tx.run(
+                `MATCH (from:Cell {id: $fromId, space_id: $spaceId}), 
+                       (to:Cell {id: $toId, space_id: $spaceId})
+                 CREATE (from)-[:CONNECTED {
+                   dimension: $dimension, 
+                   direction: 'positive',
+                   created_at: datetime()
+                 }]->(to)`,
+                { fromId: cellId, toId: conn.positive, dimension, spaceId }
+              );
+            }
+
+            // Create negative connection  
+            if (conn.negative) {
+              await tx.run(
+                `MATCH (from:Cell {id: $fromId, space_id: $spaceId}), 
+                       (to:Cell {id: $toId, space_id: $spaceId})
+                 CREATE (from)-[:CONNECTED {
+                   dimension: $dimension, 
+                   direction: 'negative', 
+                   created_at: datetime()
+                 }]->(to)`,
+                { fromId: cellId, toId: conn.negative, dimension, spaceId }
+              );
+            }
+          }
+        }
+
+        // Add metadata about the space sync
+        await tx.run(
+          `CREATE (s:SpaceMetadata {
+            space_id: $spaceId,
+            synced_at: datetime(),
+            cell_count: $cellCount,
+            dimension_count: $dimensionCount
+          })`,
+          { 
+            spaceId,
+            cellCount: Object.keys(spaceData.cells || {}).length,
+            dimensionCount: (spaceData.dimensions || []).length
+          }
+        );
+      });
+
+      logger.info(`✅ Space ${spaceId} synced to Neo4j successfully`);
+    } catch (error) {
+      logger.error(`❌ Failed to sync space ${spaceId} to Neo4j:`, error);
+      throw error;
+    } finally {
+      await session.close();
+    }
+  },
+
+  // Get complete space visualization data
+  async getSpaceVisualization(spaceId: string): Promise<any> {
+    if (!driver) return { nodes: [], edges: [], metadata: {} };
+    const session = driver.session();
+    
+    try {
+      // Get space metadata
+      const metaResult = await session.run(
+        'MATCH (s:SpaceMetadata {space_id: $spaceId}) RETURN s',
+        { spaceId }
+      );
+
+      // Get all nodes with their text content and connections
+      const result = await session.run(
+        `MATCH (c:Cell {space_id: $spaceId})
+         OPTIONAL MATCH (c)-[r:CONNECTED]->(connected:Cell {space_id: $spaceId})
+         RETURN c.id as id, 
+                c.text as text,
+                collect({
+                  target: connected.id, 
+                  dimension: r.dimension, 
+                  direction: r.direction
+                }) as connections`,
+        { spaceId }
+      );
+      
+      const nodes = result.records.map(record => ({
+        id: record.get('id'),
+        text: record.get('text') || '',
+        connections: record.get('connections').filter((c: any) => c.target)
+      }));
+      
+      const edges = nodes.flatMap(node => 
+        node.connections.map((conn: any) => ({
+          from: node.id,
+          to: conn.target,
+          dimension: conn.dimension,
+          direction: conn.direction,
+          label: `${conn.dimension}${conn.direction === 'positive' ? '+' : '-'}`
+        }))
+      );
+
+      const metadata = metaResult.records.length > 0 ? 
+        metaResult.records[0].get('s').properties : {};
+      
+      return { nodes, edges, metadata };
+    } finally {
+      await session.close();
+    }
+  },
 };

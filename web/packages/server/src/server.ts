@@ -238,6 +238,62 @@ app.post('/api/spaces', authenticateToken, async (req: AuthRequest, res) => {
   }
 });
 
+// Sync space structure to Neo4j
+app.post('/api/spaces/:spaceId/sync-neo4j', authenticateToken, async (req: AuthRequest, res) => {
+  const spaceId = req.params.spaceId;
+  const { spaceData } = req.body;
+  
+  try {
+    // Verify user has access to this space
+    const spaceResult = await pgPool.query(
+      'SELECT * FROM spaces WHERE id = $1 AND (owner_id = $2 OR id IN (SELECT space_id FROM space_permissions WHERE user_id = $2))',
+      [spaceId, req.user?.id]
+    );
+
+    if (spaceResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Space not found or access denied' });
+    }
+
+    // Sync to Neo4j
+    await graph.syncSpaceToNeo4j(spaceId, spaceData);
+
+    res.json({ 
+      success: true, 
+      message: 'Space synced to Neo4j successfully',
+      cellCount: Object.keys(spaceData.cells || {}).length,
+      dimensionCount: (spaceData.dimensions || []).length
+    });
+  } catch (error) {
+    console.error('Error syncing space to Neo4j:', error);
+    res.status(500).json({ error: 'Failed to sync space to Neo4j' });
+  }
+});
+
+// Get Neo4j visualization for a space
+app.get('/api/spaces/:spaceId/neo4j-visualization', authenticateToken, async (req: AuthRequest, res) => {
+  const spaceId = req.params.spaceId;
+  
+  try {
+    // Verify user has access to this space
+    const spaceResult = await pgPool.query(
+      'SELECT * FROM spaces WHERE id = $1 AND (owner_id = $2 OR id IN (SELECT space_id FROM space_permissions WHERE user_id = $2))',
+      [spaceId, req.user?.id]
+    );
+
+    if (spaceResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Space not found or access denied' });
+    }
+
+    // Get visualization data from Neo4j
+    const visualization = await graph.getSpaceVisualization(spaceId);
+
+    res.json(visualization);
+  } catch (error) {
+    console.error('Error getting Neo4j visualization:', error);
+    res.status(500).json({ error: 'Failed to get Neo4j visualization' });
+  }
+});
+
 // Export space as ZigZag format
 app.get('/api/spaces/:spaceId/export', authenticateToken, async (req: AuthRequest, res) => {
   try {

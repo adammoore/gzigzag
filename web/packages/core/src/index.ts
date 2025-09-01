@@ -249,6 +249,57 @@ export class ZZSpace {
     }
   }
 
+  // Serialize space structure for Neo4j synchronization
+  toSerializableFormat(): any {
+    const cells: Record<string, any> = {};
+    const dimensions = Array.from(this._dimensions);
+
+    // Serialize each cell with its connections
+    this._cells.forEach((cell, cellId) => {
+      cells[cellId] = {
+        text: cell.text,
+        connections: {}
+      };
+
+      // Get all connections for this cell
+      const allConnections = cell.getAllConnections();
+      allConnections.forEach((_, dimension) => {
+        const connections = cell.getConnections(dimension);
+        if (connections.length > 0) {
+          cells[cellId].connections[dimension] = {};
+          
+          // Find positive and negative connections
+          connections.forEach(targetId => {
+            const targetCell = this.getCell(targetId);
+            if (targetCell) {
+              // Determine direction by checking if the target connects back
+              const targetConnections = targetCell.getConnections(dimension);
+              const isPositive = targetConnections.includes(cellId);
+              
+              if (isPositive) {
+                cells[cellId].connections[dimension].positive = targetId;
+              } else {
+                cells[cellId].connections[dimension].negative = targetId;
+              }
+            }
+          });
+        }
+      });
+    });
+
+    return {
+      id: this._id,
+      dimensions,
+      cells,
+      homeCell: this._homeCell?.id,
+      metadata: {
+        cellCount: this._cells.size,
+        dimensionCount: dimensions.length,
+        exportedAt: new Date().toISOString()
+      }
+    };
+  }
+
   getCell(id: CellId): ZZCell | null {
     return this._cells.get(id) || null;
   }

@@ -5,6 +5,7 @@ import { OriginalDualPaneWorkspace } from './components/OriginalDualPaneWorkspac
 import { Launcher } from './components/launcher';
 import { ZigZagSpace } from './components/ZigZagSpace';
 import { ViewControls } from './components/ViewControls';
+import { autoSyncSpace } from './utils/neo4jSync';
 import './App.css';
 
 // Types
@@ -56,31 +57,44 @@ function App() {
     setSingleCursor({ ...initialCursor });
   };
 
-  const handleLaunchKrebsDemo = () => {
+  const handleLaunchKrebsDemo = async () => {
     const demoSpace = createKrebsCycleDemo();
     setSpace(demoSpace);
     initializeCursors(demoSpace);
     setMode('dualPane');
+    
+    // Auto-sync to Neo4j for graph analysis
+    await autoSyncSpace(demoSpace.id, demoSpace);
   };
 
-  const handleLaunchAdamChemDemo = () => {
+  const handleLaunchAdamChemDemo = async () => {
     const demoSpace = createAdamChemDemo();
     setSpace(demoSpace);
     initializeCursors(demoSpace);
     setMode('dualPane');
+    
+    // Auto-sync to Neo4j for graph analysis
+    await autoSyncSpace(demoSpace.id, demoSpace);
   };
 
-  const handleLaunchBlank = () => {
+  const handleLaunchBlank = async () => {
     const blankSpace = createBlankSpace();
     setSpace(blankSpace);
     initializeCursors(blankSpace);
     setMode('dualPane');
+    
+    // Auto-sync to Neo4j for graph analysis - most important for blank spaces
+    // as they contain the complete "main street" system structure
+    await autoSyncSpace(blankSpace.id, blankSpace);
   };
 
-  const handleFileLoad = (loadedSpace: ZZSpace) => {
+  const handleFileLoad = async (loadedSpace: ZZSpace) => {
     setSpace(loadedSpace);
     initializeCursors(loadedSpace);
     setMode('dualPane');
+    
+    // Auto-sync loaded space to Neo4j
+    await autoSyncSpace(loadedSpace.id, loadedSpace);
   };
 
   const handleBackToLauncher = () => {
