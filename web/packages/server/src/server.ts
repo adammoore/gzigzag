@@ -71,9 +71,10 @@ let neo4jDriver: Driver | null = null;
 
 try {
   if (process.env.NEO4J_URI && (process.env.NEO4J_USER || process.env.NEO4J_USERNAME) && process.env.NEO4J_PASSWORD) {
+    const neo4jUser = process.env.NEO4J_USER || process.env.NEO4J_USERNAME || 'neo4j';
     neo4jDriver = neo4j.driver(
       process.env.NEO4J_URI,
-      neo4j.auth.basic(process.env.NEO4J_USER || process.env.NEO4J_USERNAME, process.env.NEO4J_PASSWORD)
+      neo4j.auth.basic(neo4jUser, process.env.NEO4J_PASSWORD)
     );
     console.log('Neo4j configured with provided credentials');
   } else if (process.env.NODE_ENV === 'development') {
