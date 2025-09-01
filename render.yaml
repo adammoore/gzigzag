@@ -23,10 +23,6 @@ services:
         sync: false
       - key: NEO4J_PASSWORD
         sync: false
-      - key: REDIS_URL
-        fromDatabase:
-          name: zigzag-cache
-          property: connectionString
       - key: CLIENT_URL
         value: https://gzigzag-modern-client.onrender.com
 
@@ -56,8 +52,3 @@ databases:
   - name: zigzag-db
     plan: starter
 
-  # Redis instance
-  - name: zigzag-cache
-    type: redis
-    plan: starter
-    maxmemoryPolicy: allkeys-lru
