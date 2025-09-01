@@ -19,26 +19,31 @@ export const OriginalRowColView: React.FC<OriginalRowColViewProps> = ({
   const currentCell = space.getCell(cursor.cellId);
   if (!currentCell) return <div>No cell found</div>;
 
-  const GRID_SIZE = 7; // 7x7 grid centered on current cell
+  // Original GZZ RowCol view - flexible 2D grid based on actual connections
+  // Uses cursor's X and Y dimensions for authentic multi-dimensional display
+  const GRID_SIZE = 9; // Larger grid for better context
   const CENTER_POS = Math.floor(GRID_SIZE / 2);
+  
+  // Use cursor dimensions for X and Y axes  
+  const xDimension = cursor.xDimension || 'd.1';
+  const yDimension = cursor.yDimension || 'd.2';
   
   // Build 2D grid
   const grid: Array<Array<any>> = Array(GRID_SIZE).fill(null).map(() => 
     Array(GRID_SIZE).fill(null)
   );
 
-  // Find grid origin (top-left of current view)
+  // Find grid origin by moving to top-left corner
   let originCell = currentCell;
   
-  // Go up CENTER_POS steps in d.2
+  // Navigate to top-left corner of the view
   for (let i = 0; i < CENTER_POS; i++) {
-    const upCell = originCell.step('d.2', -1);
+    const upCell = originCell.step(yDimension, -1);
     if (upCell) originCell = upCell;
   }
   
-  // Go left CENTER_POS steps in d.1  
   for (let i = 0; i < CENTER_POS; i++) {
-    const leftCell = originCell.step('d.1', -1);
+    const leftCell = originCell.step(xDimension, -1);
     if (leftCell) originCell = leftCell;
   }
 
@@ -51,97 +56,201 @@ export const OriginalRowColView: React.FC<OriginalRowColViewProps> = ({
     for (let col = 0; col < GRID_SIZE; col++) {
       grid[row][col] = currentCellInRow;
       
-      if (col < GRID_SIZE - 1) {
-        currentCellInRow = currentCellInRow?.step('d.1', 1) as any || null;
+      if (col < GRID_SIZE - 1 && currentCellInRow) {
+        currentCellInRow = currentCellInRow.step(xDimension, 1) as any || null;
       }
     }
     
-    if (row < GRID_SIZE - 1) {
-      currentRowStart = currentRowStart?.step('d.2', 1) as any || null;
+    if (row < GRID_SIZE - 1 && currentRowStart) {
+      currentRowStart = currentRowStart.step(yDimension, 1) as any || null;
     }
   }
 
+  // Calculate some statistics for display
+  const populatedCells = grid.flat().filter(cell => cell !== null).length;
+  const centerRow = CENTER_POS;
+  const centerCol = CENTER_POS;
+
   return (
-    <div className="original-rowcol-view">
-      <div 
-        style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(60px, 120px))`,
-          gridTemplateRows: `repeat(${GRID_SIZE}, auto)`,
-          gap: '3px',
-          justifyContent: 'center',
-          alignContent: 'center',
-          padding: '8px'
-        }}
-      >
-        {grid.flat().map((cell, index) => {
-          const gridRow = Math.floor(index / GRID_SIZE);
-          const gridCol = index % GRID_SIZE;
-          
-          if (!cell) {
-            return (
-              <div 
-                key={`empty-${gridRow}-${gridCol}`}
-                style={{
-                  minHeight: '24px',
-                  border: '1px dashed #ccc',
-                  background: '#f8f8f8'
-                }}
-              />
-            );
-          }
-          
-          return (
-            <OriginalZZCell
-              key={cell.id}
-              cell={cell}
-              isActive={cell.id === cursor.cellId}
-              cursorType={cursorType}
-              onClick={() => onCursorChange({ ...cursor, cellId: cell.id })}
-              showTooltip={true}
-            />
-          );
-        })}
+    <div className="original-rowcol-view" style={{
+      position: 'relative',
+      height: '100%',
+      overflow: 'auto',
+      padding: '8px'
+    }}>
+      {/* Header */}
+      <div style={{
+        fontSize: '10px',
+        color: '#333',
+        fontFamily: 'monospace',
+        textAlign: 'center',
+        marginBottom: '6px',
+        padding: '4px',
+        borderBottom: '1px solid #ddd'
+      }}>
+        ROWCOL VIEW: {xDimension} (→) × {yDimension} (↓) • {populatedCells} cells
       </div>
 
-      {/* Grid info */}
-      <div style={{
-        position: 'absolute',
-        bottom: '4px',
-        left: '4px',
-        fontSize: '9px',
-        color: '#666',
-        fontFamily: 'monospace'
+      {/* Grid container */}
+      <div style={{ 
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        position: 'relative'
       }}>
-        Grid view: d.1 (cols) × d.2 (rows) • {GRID_SIZE}×{GRID_SIZE}
+        {/* Column headers */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(${GRID_SIZE}, 80px)`,
+          gap: '2px',
+          marginBottom: '4px'
+        }}>
+          {Array(GRID_SIZE).fill(0).map((_, col) => (
+            <div key={`col-${col}`} style={{
+              fontSize: '8px',
+              color: '#888',
+              textAlign: 'center',
+              fontFamily: 'monospace',
+              background: col === centerCol ? '#e8f5e8' : 'transparent'
+            }}>
+              {col - centerCol >= 0 ? `+${col - centerCol}` : col - centerCol}
+            </div>
+          ))}
+        </div>
+
+        {/* Grid with row headers */}
+        {grid.map((row, rowIndex) => (
+          <div key={`row-${rowIndex}`} style={{
+            display: 'flex',
+            alignItems: 'center',
+            marginBottom: '2px'
+          }}>
+            {/* Row header */}
+            <div style={{
+              width: '24px',
+              fontSize: '8px',
+              color: '#888',
+              textAlign: 'center',
+              fontFamily: 'monospace',
+              marginRight: '4px',
+              background: rowIndex === centerRow ? '#e8f5e8' : 'transparent'
+            }}>
+              {rowIndex - centerRow >= 0 ? `+${rowIndex - centerRow}` : rowIndex - centerRow}
+            </div>
+            
+            {/* Row cells */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: `repeat(${GRID_SIZE}, 80px)`,
+              gap: '2px'
+            }}>
+              {row.map((cell, colIndex) => {
+                const isCenter = rowIndex === centerRow && colIndex === centerCol;
+                
+                if (!cell) {
+                  return (
+                    <div 
+                      key={`empty-${rowIndex}-${colIndex}`}
+                      style={{
+                        minHeight: '32px',
+                        border: isCenter ? '2px dashed #999' : '1px dashed #ddd',
+                        background: isCenter ? '#f0f8ff' : '#f9f9f9',
+                        borderRadius: '3px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '10px',
+                        color: '#ccc'
+                      }}
+                    >
+                      {isCenter ? '∅' : ''}
+                    </div>
+                  );
+                }
+                
+                const isActiveCursor = cell.id === cursor.cellId;
+                
+                return (
+                  <div 
+                    key={cell.id} 
+                    style={{
+                      position: 'relative',
+                      border: isActiveCursor 
+                        ? `3px solid ${cursorType === 'green' ? '#4CAF50' : '#2196F3'}`
+                        : isCenter 
+                        ? '2px solid #ff9800'
+                        : '1px solid #ddd',
+                      borderRadius: '4px',
+                      boxShadow: isActiveCursor 
+                        ? `0 0 6px ${cursorType === 'green' ? '#4CAF50' : '#2196F3'}`
+                        : isCenter
+                        ? '0 0 3px #ff9800'
+                        : 'none',
+                      background: isCenter && !isActiveCursor ? '#fff3e0' : 'white'
+                    }}
+                  >
+                    <OriginalZZCell
+                      cell={cell}
+                      isActive={isActiveCursor}
+                      cursorType={cursorType}
+                      onClick={() => onCursorChange({ ...cursor, cellId: cell.id })}
+                      showTooltip={true}
+                    />
+                    
+                    {/* Center marker */}
+                    {isCenter && !isActiveCursor && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '2px',
+                        right: '2px',
+                        fontSize: '8px',
+                        color: '#ff9800',
+                        fontWeight: 'bold'
+                      }}>
+                        ⊕
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Axis labels */}
       <div style={{
         position: 'absolute',
-        top: '4px',
-        left: '50%',
-        transform: 'translateX(-50%)',
+        top: '32px',
+        right: '8px',
         fontSize: '9px',
         color: '#666',
         fontFamily: 'monospace',
-        textAlign: 'center'
+        textAlign: 'right',
+        lineHeight: '12px'
       }}>
-        d.1 →
+        <div>{xDimension} →</div>
+        <div style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
+          {yDimension} ↓
+        </div>
       </div>
-      
+
+      {/* Status info */}
       <div style={{
         position: 'absolute',
-        left: '4px',
-        top: '50%',
-        transform: 'translateY(-50%) rotate(-90deg)',
-        transformOrigin: 'center',
+        bottom: '8px',
+        left: '8px',
+        right: '8px',
+        textAlign: 'center',
         fontSize: '9px',
         color: '#666',
         fontFamily: 'monospace',
-        textAlign: 'center'
+        background: 'rgba(255,255,255,0.9)',
+        padding: '4px',
+        borderRadius: '3px',
+        border: '1px solid #ddd'
       }}>
-        d.2 ↓
+        {GRID_SIZE}×{GRID_SIZE} grid • {populatedCells} populated • Cursor at center
       </div>
     </div>
   );

@@ -512,11 +512,13 @@ export function createBlankSpace(): ZZSpace {
 
   // Add basic views (following original GzigZag)
   const vanishingView = new ZZCell(space, 'Vanishing');
+  const rankView = new ZZCell(space, 'Rank'); 
   const rowView = new ZZCell(space, 'Row'); 
   const columnView = new ZZCell(space, 'Column');
   
   viewsList.connect('d.2', vanishingView);
-  vanishingView.connect('d.2', rowView);
+  vanishingView.connect('d.2', rankView);
+  rankView.connect('d.2', rowView);
   rowView.connect('d.2', columnView);
 
   // Create Bindings list structure

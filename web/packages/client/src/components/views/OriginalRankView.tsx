@@ -19,7 +19,7 @@ export const OriginalRankView: React.FC<OriginalRankViewProps> = ({
   const currentCell = space.getCell(cursor.cellId);
   if (!currentCell) return <div>No cell found</div>;
 
-  // Get the full rank along current dimension
+  // Original GZZ Rank view - shows linear sequence along dimension
   const rank: any[] = [];
   
   // Find head of rank (go negative until we can't)
@@ -42,43 +42,106 @@ export const OriginalRankView: React.FC<OriginalRankViewProps> = ({
     rank.push(currentCell);
   }
 
+  // Find current position in rank for better visualization
+  const currentIndex = rank.findIndex(cell => cell.id === cursor.cellId);
+
   return (
-    <div className="original-rank-view">
-      {rank.map((cell, index) => (
-        <React.Fragment key={cell.id}>
-          <OriginalZZCell
-            cell={cell}
-            isActive={cell.id === cursor.cellId}
-            cursorType={cursorType}
-            onClick={() => onCursorChange({ ...cursor, cellId: cell.id })}
-            showTooltip={true}
-          />
-          {index < rank.length - 1 && (
-            <span 
-              style={{ 
-                color: '#666', 
-                fontSize: '14px', 
-                margin: '0 4px',
-                fontFamily: 'monospace'
-              }}
-            >
-              →
-            </span>
-          )}
-        </React.Fragment>
-      ))}
-      
-      {/* Show dimension info */}
-      <div style={{ 
-        position: 'absolute', 
-        bottom: '4px', 
-        left: '4px', 
-        fontSize: '9px',
-        color: '#666',
-        fontFamily: 'monospace'
+    <div className="original-rank-view" style={{ 
+      position: 'relative', 
+      height: '100%',
+      overflow: 'auto',
+      padding: '12px'
+    }}>
+      {/* Rank header */}
+      <div style={{
+        fontSize: '11px',
+        color: '#333',
+        fontFamily: 'monospace',
+        marginBottom: '8px',
+        textAlign: 'center',
+        borderBottom: '1px solid #ddd',
+        paddingBottom: '4px'
       }}>
-        Rank view: {cursor.dimension} • {rank.length} cells
+        RANK VIEW: {cursor.dimension} ({rank.length} cells)
       </div>
+
+      {/* Vertical rank display (authentic GZZ style) */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '6px'
+      }}>
+        {rank.map((cell, index) => (
+          <div key={cell.id} style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            position: 'relative'
+          }}>
+            {/* Position indicator */}
+            <div style={{
+              fontSize: '8px',
+              color: '#888',
+              fontFamily: 'monospace',
+              marginBottom: '2px'
+            }}>
+              [{index}]
+            </div>
+            
+            {/* Cell */}
+            <div style={{
+              border: cell.id === cursor.cellId 
+                ? `2px solid ${cursorType === 'green' ? '#4CAF50' : '#2196F3'}`
+                : '1px solid #ccc',
+              borderRadius: '4px',
+              boxShadow: cell.id === cursor.cellId 
+                ? `0 0 4px ${cursorType === 'green' ? '#4CAF50' : '#2196F3'}`
+                : 'none'
+            }}>
+              <OriginalZZCell
+                cell={cell}
+                isActive={cell.id === cursor.cellId}
+                cursorType={cursorType}
+                onClick={() => onCursorChange({ ...cursor, cellId: cell.id })}
+                showTooltip={true}
+              />
+            </div>
+            
+            {/* Connection arrow */}
+            {index < rank.length - 1 && (
+              <div style={{
+                color: '#666',
+                fontSize: '12px',
+                fontFamily: 'monospace',
+                marginTop: '2px'
+              }}>
+                ↓
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Current position indicator */}
+      {currentIndex >= 0 && (
+        <div style={{
+          position: 'absolute',
+          bottom: '8px',
+          left: '8px',
+          right: '8px',
+          textAlign: 'center',
+          fontSize: '9px',
+          color: '#666',
+          fontFamily: 'monospace',
+          background: 'rgba(255,255,255,0.9)',
+          padding: '4px',
+          borderRadius: '3px',
+          border: '1px solid #ddd'
+        }}>
+          Position {currentIndex + 1} of {rank.length} on {cursor.dimension}
+        </div>
+      )}
     </div>
   );
 };

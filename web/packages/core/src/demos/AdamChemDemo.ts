@@ -155,13 +155,17 @@ export function createAdamChemDemo(): ZZSpace {
   console.log('Connecting reactions with cofactors...');
   // Note: Multiple reactions use same cofactors, so we connect via different semantic dimensions
   
-  // Citrate → Isocitrate (via aconitase)
-  compoundCells['Citrate'].connect('d.requires', cofactorCells['NAD+']);
-  compoundCells['Isocitrate'].connect('d.produces', cofactorCells['NADH']);
+  // Citrate → Isocitrate (via aconitase) - Note: This step doesn't use NAD+ in reality
+  // compoundCells['Citrate'].connect('d.requires', cofactorCells['NAD+']);
+  // compoundCells['Isocitrate'].connect('d.produces', cofactorCells['NADH']);
+
+  // Isocitrate → α-Ketoglutarate (isocitrate dehydrogenase) - Uses NAD+
+  compoundCells['Isocitrate'].connect('d.consumes', cofactorCells['NAD+']);
+  compoundCells['α-Ketoglutarate'].connect('d.produces', cofactorCells['NADH']);
 
   // α-Ketoglutarate → Succinyl-CoA (α-ketoglutarate dehydrogenase complex)
-  compoundCells['α-Ketoglutarate'].connect('d.consumes', cofactorCells['NAD+']);
-  compoundCells['α-Ketoglutarate'].connect('d.requires', cofactorCells['CoA-SH']);
+  compoundCells['α-Ketoglutarate'].connect('d.requires', cofactorCells['NAD+']);
+  compoundCells['α-Ketoglutarate'].connect('d.needs', cofactorCells['CoA-SH']);
   compoundCells['Succinyl-CoA'].connect('d.yields', cofactorCells['NADH']);
 
   // Succinyl-CoA → Succinate (succinyl-CoA synthetase)
@@ -173,7 +177,7 @@ export function createAdamChemDemo(): ZZSpace {
   compoundCells['Fumarate'].connect('d.produces', cofactorCells['FADH2']);
 
   // Malate → Oxaloacetate (malate dehydrogenase)
-  compoundCells['Malate'].connect('d.consumes', cofactorCells['NAD+']);
+  compoundCells['Malate'].connect('d.utilizes', cofactorCells['NAD+']);
   compoundCells['Oxaloacetate'].connect('d.yields', cofactorCells['NADH']);
 
   // === 5. AMINO ACID METABOLISM ===
