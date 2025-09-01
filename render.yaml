@@ -6,7 +6,7 @@ services:
     repo: https://github.com/adammoore/gzigzag
     branch: phase-4c-modernized
     rootDir: web
-    buildCommand: npm install && npm run build:all
+    buildCommand: npm install && npm run build:core && npm run build:server
     startCommand: npm run start:server
     envVars:
       - key: NODE_ENV
@@ -33,7 +33,7 @@ services:
     repo: https://github.com/adammoore/gzigzag
     branch: phase-4c-modernized
     rootDir: web
-    buildCommand: npm install && npm run build:client
+    buildCommand: npm install && npm run build:core && npm run build:client
     staticPublishPath: ./packages/client/dist
     envVars:
       - key: VITE_API_URL
