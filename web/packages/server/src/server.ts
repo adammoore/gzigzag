@@ -30,21 +30,60 @@ const pgPool = process.env.DATABASE_URL
       password: process.env.DB_PASSWORD || 'zigzag_password'
     });
 
-const neo4jDriver = neo4j.driver(
-  process.env.NEO4J_URI || 'bolt://localhost:7687',
-  neo4j.auth.basic(
-    process.env.NEO4J_USER || 'neo4j',
-    process.env.NEO4J_PASSWORD || 'zigzag_password'
-  )
-);
+// Neo4j connection - optional for production
+let neo4jDriver: Driver | null = null;
 
-// Redis connection - handle both URL and host/port config
-const redis = process.env.REDIS_URL 
-  ? new Redis(process.env.REDIS_URL)
-  : new Redis({
+try {
+  if (process.env.NEO4J_URI && process.env.NEO4J_USER && process.env.NEO4J_PASSWORD) {
+    neo4jDriver = neo4j.driver(
+      process.env.NEO4J_URI,
+      neo4j.auth.basic(process.env.NEO4J_USER, process.env.NEO4J_PASSWORD)
+    );
+    console.log('Neo4j configured with provided credentials');
+  } else if (process.env.NODE_ENV === 'development') {
+    neo4jDriver = neo4j.driver(
+      'bolt://localhost:7687',
+      neo4j.auth.basic('neo4j', 'zigzag_password')
+    );
+    console.log('Neo4j configured for development');
+  } else {
+    console.warn('Neo4j not configured - graph features disabled');
+  }
+} catch (error) {
+  console.warn('Neo4j initialization failed:', error);
+  neo4jDriver = null;
+}
+
+// Redis connection - handle both URL and host/port config with error handling
+let redis: Redis | null = null;
+
+try {
+  if (process.env.REDIS_URL) {
+    redis = new Redis(process.env.REDIS_URL);
+  } else if (process.env.REDIS_HOST || process.env.NODE_ENV === 'development') {
+    redis = new Redis({
       host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379')
+      port: parseInt(process.env.REDIS_PORT || '6379'),
+      maxRetriesPerRequest: 3,
+      lazyConnect: true
     });
+  }
+  
+  if (redis) {
+    redis.on('error', (error) => {
+      console.warn('Redis connection error:', error.message);
+      console.warn('Continuing without Redis - caching disabled');
+    });
+    
+    redis.on('connect', () => {
+      console.log('✅ Redis connected successfully');
+    });
+  }
+} catch (error) {
+  console.warn('Redis initialization failed:', error);
+  console.warn('Continuing without Redis - caching disabled');
+  redis = null;
+}
 
 // Middleware
 app.use(cors({
@@ -73,17 +112,27 @@ app.get('/health', async (req, res) => {
   }
 
   try {
-    const session = neo4jDriver.session();
-    await session.run('RETURN 1');
-    await session.close();
-    health.services.neo4j = true;
+    if (neo4jDriver) {
+      const session = neo4jDriver.session();
+      await session.run('RETURN 1');
+      await session.close();
+      health.services.neo4j = true;
+    } else {
+      // Neo4j is optional, mark as true if not configured
+      health.services.neo4j = true;
+    }
   } catch (error) {
     console.error('Neo4j health check failed:', error);
   }
 
   try {
-    await redis.ping();
-    health.services.redis = true;
+    if (redis) {
+      await redis.ping();
+      health.services.redis = true;
+    } else {
+      // Redis is optional, mark as true if not configured
+      health.services.redis = true;
+    }
   } catch (error) {
     console.error('Redis health check failed:', error);
   }
@@ -180,13 +229,19 @@ app.post('/api/spaces/:spaceId/connections', authenticateToken, async (req: Auth
       [req.params.spaceId, from_cell_id, to_cell_id, dimension, metadata || {}]
     );
     
-    // Also store in Neo4j for graph operations
-    const session = neo4jDriver.session();
-    await session.run(
-      'MATCH (from:Cell {id: \$from_id}), (to:Cell {id: \$to_id}) CREATE (from)-[:CONNECTED {dimension: \$dimension}]->(to)',
-      { from_id: from_cell_id, to_id: to_cell_id, dimension }
-    );
-    await session.close();
+    // Also store in Neo4j for graph operations (if available)
+    if (neo4jDriver) {
+      try {
+        const session = neo4jDriver.session();
+        await session.run(
+          'MATCH (from:Cell {id: \$from_id}), (to:Cell {id: \$to_id}) CREATE (from)-[:CONNECTED {dimension: \$dimension}]->(to)',
+          { from_id: from_cell_id, to_id: to_cell_id, dimension }
+        );
+        await session.close();
+      } catch (error) {
+        console.warn('Neo4j connection creation failed:', error);
+      }
+    }
     
     // Emit WebSocket event
     io.to(req.params.spaceId).emit('connection:created', result.rows[0]);
@@ -244,8 +299,12 @@ httpServer.listen(PORT, () => {
 process.on('SIGINT', async () => {
   console.log('Shutting down gracefully...');
   await pgPool.end();
-  await neo4jDriver.close();
-  redis.disconnect();
+  if (neo4jDriver) {
+    await neo4jDriver.close();
+  }
+  if (redis) {
+    redis.disconnect();
+  }
   httpServer.close(() => {
     console.log('Server closed');
     process.exit(0);
