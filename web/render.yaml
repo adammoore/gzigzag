@@ -28,7 +28,7 @@ services:
           name: zigzag-cache
           property: connectionString
       - key: CLIENT_URL
-        value: https://zigzag-client.onrender.com
+        value: https://gzigzag-modern-client.onrender.com
 
   # Static site for the React frontend
   - type: web
@@ -41,7 +41,7 @@ services:
     staticPublishPath: ./packages/client/dist
     envVars:
       - key: VITE_API_URL
-        value: https://zigzag-api.onrender.com
+        value: https://gzigzag-modern.onrender.com
     headers:
       - path: /*
         name: X-Frame-Options

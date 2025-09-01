@@ -52,7 +52,18 @@ if (process.env.DATABASE_URL) {
 } else {
   console.error('❌ No PostgreSQL configuration found!');
   console.error('Expected DATABASE_URL or DB_HOST environment variable');
-  throw new Error('PostgreSQL configuration required');
+  console.error('Available env vars:', Object.keys(process.env).filter(k => k.includes('DB') || k.includes('DATABASE')));
+  
+  // Try to continue without database in case it's set later
+  console.warn('⚠️ Starting without database - health checks will fail');
+  pgPool = new Pool({
+    host: 'nonexistent',
+    port: 1,
+    database: 'none',
+    user: 'none',
+    password: 'none',
+    max: 0 // Don't create any connections
+  });
 }
 
 // Neo4j connection - optional for production
