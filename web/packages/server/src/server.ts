@@ -8,6 +8,7 @@ import neo4j from 'neo4j-driver';
 import Redis from 'ioredis';
 import { createAuthRouter } from './routes/auth';
 import { authenticateToken, AuthRequest } from './middleware/auth';
+import { graph } from './database/neo4j';
 
 // Initialize Express app
 const app = express();
