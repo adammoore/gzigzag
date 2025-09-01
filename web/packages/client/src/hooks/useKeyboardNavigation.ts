@@ -170,8 +170,9 @@ export const useKeyboardNavigation = ({
   };
 };
 
-// Global state for marked cells (should ideally be in a context/store)
+// Global state for marked cells and cell ID buffer (should ideally be in a context/store)
 const markedCells = new Set<string>();
+let cellIdBuffer = '';
 
 // Dual pane keyboard navigation (original GzigZag style)
 export const useDualPaneNavigation = ({
@@ -233,8 +234,9 @@ export const useDualPaneNavigation = ({
         'X', 'Y', 'Z', 'x', 'y', 'z',
         'V', 'v', '~', '<', '>',
         'n', 'm', 'b', 'h', 'Delete',
-        '-', 't', 'T', '/', 'g',
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
+        '-', 't', 'T', '/', 'g', 'G',
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+        'S', 'z', 'Backspace'
       ];
       
       if (zigzagKeys.includes(e.key)) {
@@ -836,17 +838,79 @@ export const useDualPaneNavigation = ({
           handleLoadCommand();
           break;
 
-        // Cell ID buffer and goto commands
+        // Cell ID buffer system (authentic GZZ feature)
         case '0': case '1': case '2': case '3': case '4':
         case '5': case '6': case '7': case '8': case '9':
-          // TODO: Implement cell ID buffer system
-          console.log(`Added ${e.key} to cell ID buffer`);
+          e.preventDefault();
+          cellIdBuffer += e.key;
+          console.log(`Cell ID buffer: "${cellIdBuffer}"`);
           break;
           
         case 'g':
           e.preventDefault();
-          // TODO: Go to cell by ID in buffer (view 1)
-          console.log('Go to cell by ID (not implemented)');
+          if (cellIdBuffer.length > 0) {
+            try {
+              // Try to find cell by numeric ID first
+              let targetCell = space.getCell(cellIdBuffer);
+              
+              // If not found by exact ID, try to find by partial ID match
+              if (!targetCell) {
+                const allCells = space.getAllCells();
+                targetCell = allCells.find(cell => cell.id.startsWith(cellIdBuffer));
+              }
+              
+              if (targetCell) {
+                onBlueCursorChange({ ...blueCursor, cellId: targetCell.id });
+                console.log(`Moved to cell: ${targetCell.id} (buffer: "${cellIdBuffer}")`);
+              } else {
+                console.warn(`Cell not found for ID: "${cellIdBuffer}"`);
+              }
+            } catch (error) {
+              console.warn('Failed to navigate to cell:', error);
+            }
+            
+            // Clear buffer after use
+            cellIdBuffer = '';
+          } else {
+            console.log('Cell ID buffer is empty');
+          }
+          break;
+        
+        case 'G':
+          e.preventDefault();
+          // Go to cell by ID for GREEN cursor (view 0)
+          if (cellIdBuffer.length > 0) {
+            try {
+              let targetCell = space.getCell(cellIdBuffer);
+              
+              if (!targetCell) {
+                const allCells = space.getAllCells();
+                targetCell = allCells.find(cell => cell.id.startsWith(cellIdBuffer));
+              }
+              
+              if (targetCell) {
+                onGreenCursorChange({ ...greenCursor, cellId: targetCell.id });
+                console.log(`Moved green cursor to cell: ${targetCell.id} (buffer: "${cellIdBuffer}")`);
+              } else {
+                console.warn(`Cell not found for ID: "${cellIdBuffer}"`);
+              }
+            } catch (error) {
+              console.warn('Failed to navigate green cursor to cell:', error);
+            }
+            
+            cellIdBuffer = '';
+          } else {
+            console.log('Cell ID buffer is empty');
+          }
+          break;
+          
+        case 'Backspace':
+          // Remove last digit from buffer
+          if (cellIdBuffer.length > 0) {
+            cellIdBuffer = cellIdBuffer.slice(0, -1);
+            console.log(`Cell ID buffer: "${cellIdBuffer}"`);
+            e.preventDefault();
+          }
           break;
       }
     };
