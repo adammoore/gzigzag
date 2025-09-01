@@ -20,15 +20,40 @@ const io = new SocketIOServer(httpServer, {
 });
 
 // Database connections - handle both URL and individual config
-const pgPool = process.env.DATABASE_URL 
-  ? new Pool({ connectionString: process.env.DATABASE_URL })
-  : new Pool({
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT || '5432'),
-      database: process.env.DB_NAME || 'zigzag_db',
-      user: process.env.DB_USER || 'zigzag_user',
-      password: process.env.DB_PASSWORD || 'zigzag_password'
-    });
+console.log('Environment check:', {
+  NODE_ENV: process.env.NODE_ENV,
+  DATABASE_URL: process.env.DATABASE_URL ? '[SET]' : '[NOT SET]',
+  DB_HOST: process.env.DB_HOST || '[NOT SET]'
+});
+
+let pgPool: Pool;
+
+if (process.env.DATABASE_URL) {
+  console.log('PostgreSQL configured with DATABASE_URL');
+  pgPool = new Pool({ connectionString: process.env.DATABASE_URL });
+} else if (process.env.DB_HOST) {
+  console.log('PostgreSQL configured with individual settings');
+  pgPool = new Pool({
+    host: process.env.DB_HOST,
+    port: parseInt(process.env.DB_PORT || '5432'),
+    database: process.env.DB_NAME || 'zigzag_db',
+    user: process.env.DB_USER || 'zigzag_user',
+    password: process.env.DB_PASSWORD
+  });
+} else if (process.env.NODE_ENV === 'development') {
+  console.log('PostgreSQL configured for development');
+  pgPool = new Pool({
+    host: 'localhost',
+    port: 5432,
+    database: 'zigzag_db',
+    user: 'zigzag_user',
+    password: 'zigzag_password'
+  });
+} else {
+  console.error('❌ No PostgreSQL configuration found!');
+  console.error('Expected DATABASE_URL or DB_HOST environment variable');
+  throw new Error('PostgreSQL configuration required');
+}
 
 // Neo4j connection - optional for production
 let neo4jDriver: Driver | null = null;
@@ -60,19 +85,32 @@ let redis: Redis | null = null;
 try {
   if (process.env.REDIS_URL) {
     redis = new Redis(process.env.REDIS_URL);
-  } else if (process.env.REDIS_HOST || process.env.NODE_ENV === 'development') {
+    console.log('Redis configured with URL');
+  } else if (process.env.REDIS_HOST) {
     redis = new Redis({
-      host: process.env.REDIS_HOST || 'localhost',
+      host: process.env.REDIS_HOST,
       port: parseInt(process.env.REDIS_PORT || '6379'),
       maxRetriesPerRequest: 3,
       lazyConnect: true
     });
+    console.log('Redis configured with host/port');
+  } else if (process.env.NODE_ENV === 'development') {
+    redis = new Redis({
+      host: 'localhost',
+      port: 6379,
+      maxRetriesPerRequest: 3,
+      lazyConnect: true
+    });
+    console.log('Redis configured for development');
+  } else {
+    console.warn('Redis not configured - caching disabled');
   }
   
   if (redis) {
     redis.on('error', (error) => {
       console.warn('Redis connection error:', error.message);
       console.warn('Continuing without Redis - caching disabled');
+      redis = null;
     });
     
     redis.on('connect', () => {
