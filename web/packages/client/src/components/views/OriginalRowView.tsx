@@ -33,11 +33,11 @@ export const OriginalRowView: React.FC<OriginalRowViewProps> = ({
   );
 
   // Find starting point (top-left of view)
-  let rowStart = currentCell;
+  let rowStart: any = currentCell;
   
   // Move up in secondary dimension to find top row
   for (let i = 0; i < CENTER_ROW; i++) {
-    const upCell = rowStart.step(secondaryDim, -1);
+    const upCell = rowStart?.step(secondaryDim, -1);
     if (upCell) rowStart = upCell;
   }
 
@@ -60,8 +60,8 @@ export const OriginalRowView: React.FC<OriginalRowViewProps> = ({
     }
     
     // Move to next row
-    if (row < VISIBLE_ROWS - 1) {
-      rowStart = rowStart?.step(secondaryDim, 1);
+    if (row < VISIBLE_ROWS - 1 && rowStart) {
+      rowStart = rowStart.step(secondaryDim, 1);
     }
   }
 

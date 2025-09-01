@@ -8,7 +8,6 @@ import { OriginalStretchVanishingView } from './views/OriginalStretchVanishingVi
 import { OriginalRankView } from './views/OriginalRankView';
 import { OriginalRowView } from './views/OriginalRowView';
 import { OriginalColumnView } from './views/OriginalColumnView';
-import { OriginalRowColView } from './views/OriginalRowColView';
 import '../themes/originalGzigZag.css';
 
 interface OriginalDualPaneWorkspaceProps {

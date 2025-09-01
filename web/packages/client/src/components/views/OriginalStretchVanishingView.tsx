@@ -1,7 +1,6 @@
 import React from 'react';
 import { ZZSpace } from '@zigzag/core';
 import { ZZCursor } from '../../App';
-import { OriginalZZCell } from '../OriginalZZCell';
 
 interface OriginalStretchVanishingViewProps {
   space: ZZSpace;

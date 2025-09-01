@@ -34,7 +34,7 @@ const ViewContainer = styled.div<{ viewType: ViewType }>`
     height: 100%;
   `}
   
-  ${props => props.viewType === 'rowcol' && `
+  ${props => (props.viewType === 'row' || props.viewType === 'column') && `
     flex-direction: column;
     padding: 10px;
   `}
@@ -63,7 +63,8 @@ export const ZigZagSpace: React.FC<ZigZagSpaceProps> = ({
         return <RankView {...commonProps} />;
       case 'vanishing':
         return <VanishingView {...commonProps} />;
-      case 'rowcol':
+      case 'row':
+      case 'column':
         return <RowColView {...commonProps} />;
       default:
         return <RankView {...commonProps} />;

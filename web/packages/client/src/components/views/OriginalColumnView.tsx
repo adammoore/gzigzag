@@ -33,11 +33,11 @@ export const OriginalColumnView: React.FC<OriginalColumnViewProps> = ({
   );
 
   // Find starting point (top-left of view)
-  let colStart = currentCell;
+  let colStart: any = currentCell;
   
   // Move left in secondary dimension to find leftmost column
   for (let i = 0; i < CENTER_COL; i++) {
-    const leftCell = colStart.step(secondaryDim, -1);
+    const leftCell = colStart?.step(secondaryDim, -1);
     if (leftCell) colStart = leftCell;
   }
 
@@ -60,8 +60,8 @@ export const OriginalColumnView: React.FC<OriginalColumnViewProps> = ({
     }
     
     // Move to next column
-    if (col < VISIBLE_COLS - 1) {
-      colStart = colStart?.step(secondaryDim, 1);
+    if (col < VISIBLE_COLS - 1 && colStart) {
+      colStart = colStart.step(secondaryDim, 1);
     }
   }
 

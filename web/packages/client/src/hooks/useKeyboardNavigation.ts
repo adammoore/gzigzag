@@ -145,7 +145,7 @@ export const useKeyboardNavigation = ({
           onCursorChange({ ...cursor, viewType: 'vanishing' });
           break;
         case 'F3':
-          onCursorChange({ ...cursor, viewType: 'rowcol' });
+          onCursorChange({ ...cursor, viewType: 'row' });
           break;
       }
     };
@@ -856,7 +856,7 @@ export const useDualPaneNavigation = ({
               // If not found by exact ID, try to find by partial ID match
               if (!targetCell) {
                 const allCells = space.getAllCells();
-                targetCell = allCells.find(cell => cell.id.startsWith(cellIdBuffer));
+                targetCell = allCells.find(cell => cell.id.startsWith(cellIdBuffer)) || null;
               }
               
               if (targetCell) {
@@ -885,7 +885,7 @@ export const useDualPaneNavigation = ({
               
               if (!targetCell) {
                 const allCells = space.getAllCells();
-                targetCell = allCells.find(cell => cell.id.startsWith(cellIdBuffer));
+                targetCell = allCells.find(cell => cell.id.startsWith(cellIdBuffer)) || null;
               }
               
               if (targetCell) {

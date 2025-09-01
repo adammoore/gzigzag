@@ -13,6 +13,9 @@ export type ZZCursor = {
   cellId: string;
   dimension: string;
   viewType: ViewType;
+  xDimension?: string;
+  yDimension?: string;
+  zDimension?: string;
 };
 
 export type AppMode = 'launcher' | 'singlePane' | 'dualPane';

@@ -124,9 +124,11 @@ export const ViewControls: React.FC<ViewControlsProps> = ({
   };
 
   const viewTypes: { key: ViewType; label: string; shortcut: string }[] = [
-    { key: 'rank', label: 'Rank', shortcut: 'F1' },
-    { key: 'vanishing', label: '3D', shortcut: 'F2' },
-    { key: 'rowcol', label: 'Grid', shortcut: 'F3' },
+    { key: 'vanishing', label: 'Vanishing', shortcut: 'v' },
+    { key: 'stretchvanishing', label: 'Stretch', shortcut: 'v' },
+    { key: 'row', label: 'Row', shortcut: 'v' },
+    { key: 'column', label: 'Column', shortcut: 'v' },
+    { key: 'rank', label: 'Rank', shortcut: 'v' },
   ];
 
   return (
