@@ -17,10 +17,6 @@ services:
         fromDatabase:
           name: zigzag-db
           property: connectionString
-      - key: DB_NAME
-        value: zigzag_db
-      - key: DB_USER
-        value: zigzag_user
       - key: NEO4J_URI
         sync: false
       - key: NEO4J_USER
@@ -59,8 +55,6 @@ databases:
   # PostgreSQL database
   - name: zigzag-db
     plan: starter
-    databaseName: zigzag_db
-    user: zigzag_user
 
   # Redis instance
   - name: zigzag-cache

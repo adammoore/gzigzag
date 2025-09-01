@@ -92,6 +92,21 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({
+    name: 'GzigZag API Server',
+    version: '4.0.0',
+    status: 'running',
+    endpoints: {
+      health: '/health',
+      auth: '/api/auth/*',
+      spaces: '/api/spaces/*',
+      docs: 'https://github.com/adammoore/gzigzag'
+    }
+  });
+});
+
 // Health check endpoint
 app.get('/health', async (req, res) => {
   const health = {
