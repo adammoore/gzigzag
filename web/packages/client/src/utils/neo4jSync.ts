@@ -8,7 +8,7 @@ export async function syncSpaceToNeo4j(spaceId: string, space: ZZSpace): Promise
     // Get auth token from localStorage (assuming it's stored there)
     const token = localStorage.getItem('token');
     if (!token) {
-      console.warn('No auth token found - cannot sync to Neo4j');
+      console.log('No auth token found - skipping Neo4j sync (probably in demo mode)');
       return false;
     }
 
