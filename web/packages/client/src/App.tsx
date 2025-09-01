@@ -35,10 +35,20 @@ function App() {
 
   const initializeCursors = (newSpace: ZZSpace) => {
     const homeCell = newSpace.getHomeCell();
+    
+    // Get the first available dimension from the space configuration
+    const dimensions = newSpace.getDimensions();
+    const primaryDimension = dimensions.length > 0 ? dimensions[0] : 'd.1';
+    const secondaryDimension = dimensions.length > 1 ? dimensions[1] : 'd.2';
+    const tertiaryDimension = dimensions.length > 2 ? dimensions[2] : 'd.3';
+    
     const initialCursor: ZZCursor = {
       cellId: homeCell.id,
-      dimension: 'd.1',
-      viewType: 'vanishing'
+      dimension: primaryDimension,
+      viewType: 'vanishing',
+      xDimension: primaryDimension,
+      yDimension: secondaryDimension,
+      zDimension: tertiaryDimension
     };
     
     setGreenCursor({ ...initialCursor });

@@ -20,7 +20,8 @@ export const OriginalColumnView: React.FC<OriginalColumnViewProps> = ({
   if (!currentCell) return <div>No cell found</div>;
 
   // Column view shows vertical arrangement - transpose of row view
-  const primaryDim = cursor.yDimension || 'd.2'; // Primary dimension is vertical
+  const spaceDimensions = space.getDimensions();
+  const primaryDim = cursor.yDimension || spaceDimensions[1] || 'd.2'; // Primary dimension is vertical
   const secondaryDim = cursor.dimension; // Secondary dimension is horizontal
   const VISIBLE_COLS = 7;
   const CELLS_PER_COL = 9;

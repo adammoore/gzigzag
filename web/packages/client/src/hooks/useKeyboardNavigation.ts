@@ -72,30 +72,30 @@ export const useKeyboardNavigation = ({
       }
 
       switch (e.key) {
-        // Arrow key navigation (d.1 and d.2)
+        // Arrow key navigation using cursor dimensions
         case 'ArrowRight':
         case 'l':
-          navigateInDimension('d.1', 1);
+          navigateInDimension(cursor.xDimension || cursor.dimension, 1);
           break;
         case 'ArrowLeft':
         case 'j':
-          navigateInDimension('d.1', -1);
+          navigateInDimension(cursor.xDimension || cursor.dimension, -1);
           break;
         case 'ArrowUp':
         case 'i':
-          navigateInDimension('d.2', -1);
+          navigateInDimension(cursor.yDimension || space.getDimensions()[1] || 'd.2', -1);
           break;
         case 'ArrowDown':
         case ',':
-          navigateInDimension('d.2', 1);
+          navigateInDimension(cursor.yDimension || space.getDimensions()[1] || 'd.2', 1);
           break;
         
         // Z-axis navigation
         case 'k':
-          navigateInDimension('d.3', 1);
+          navigateInDimension(cursor.zDimension || space.getDimensions()[2] || 'd.3', 1);
           break;
         case 'K':
-          navigateInDimension('d.3', -1);
+          navigateInDimension(cursor.zDimension || space.getDimensions()[2] || 'd.3', -1);
           break;
 
         // Current dimension navigation

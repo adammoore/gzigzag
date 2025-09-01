@@ -20,8 +20,9 @@ export const OriginalRowView: React.FC<OriginalRowViewProps> = ({
   if (!currentCell) return <div>No cell found</div>;
 
   // Row view shows horizontal arrangement based on one primary dimension
+  const spaceDimensions = space.getDimensions();
   const primaryDim = cursor.dimension;
-  const secondaryDim = cursor.yDimension || 'd.2';
+  const secondaryDim = cursor.yDimension || spaceDimensions[1] || 'd.2';
   const VISIBLE_ROWS = 5;
   const CELLS_PER_ROW = 7;
   const CENTER_ROW = Math.floor(VISIBLE_ROWS / 2);

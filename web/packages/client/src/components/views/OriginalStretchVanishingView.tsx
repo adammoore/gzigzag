@@ -33,10 +33,11 @@ export const OriginalStretchVanishingView: React.FC<OriginalStretchVanishingView
     level: number
   } } = {};
 
-  // Get dimensions for navigation
-  const xDim = cursor.xDimension || 'd.1';
-  const yDim = cursor.yDimension || 'd.2';
-  const zDim = cursor.zDimension || 'd.3';
+  // Get dimensions for navigation - use space dimensions dynamically
+  const spaceDimensions = space.getDimensions();
+  const xDim = cursor.xDimension || spaceDimensions[0] || 'd.1';
+  const yDim = cursor.yDimension || spaceDimensions[1] || 'd.2';
+  const zDim = cursor.zDimension || spaceDimensions[2] || 'd.3';
 
   // Build the network around the current cell
   const buildNetwork = (cell: any, level: number, visited = new Set()) => {
