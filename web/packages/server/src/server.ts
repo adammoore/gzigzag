@@ -1,3 +1,7 @@
+// Load environment variables first
+import dotenv from 'dotenv';
+dotenv.config({ path: '../../.env' }); // Load from root .env
+
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
@@ -8,7 +12,7 @@ import neo4j from 'neo4j-driver';
 import Redis from 'ioredis';
 import { createAuthRouter } from './routes/auth';
 import { authenticateToken, AuthRequest } from './middleware/auth';
-import { graph } from './database/neo4j';
+import { graph, initNeo4j } from './database/neo4j';
 
 // Initialize Express app
 const app = express();
@@ -264,6 +268,70 @@ app.post('/api/spaces/:spaceId/sync-neo4j', async (req, res) => {
   }
 });
 
+// Test endpoint to verify Neo4j data (no auth required for testing)
+app.get('/api/neo4j-test/:spaceId', async (req, res) => {
+  const spaceId = req.params.spaceId;
+  
+  try {
+    const data = await graph.getSpaceVisualization(spaceId);
+    res.json({
+      spaceId,
+      nodeCount: data.nodes?.length || 0,
+      edgeCount: data.edges?.length || 0,
+      nodes: data.nodes,
+      edges: data.edges,
+      metadata: data.metadata
+    });
+  } catch (error) {
+    console.error('Error querying Neo4j:', error);
+    res.status(500).json({ error: 'Failed to query Neo4j', details: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+// Set production space (replaces all data in Neo4j with single space)
+app.post('/api/neo4j/set-production-space', async (req, res) => {
+  const { spaceId, spaceData } = req.body;
+  
+  if (!spaceId || !spaceData) {
+    return res.status(400).json({ error: 'Missing spaceId or spaceData' });
+  }
+  
+  try {
+    console.log(`Setting ${spaceId} as production space in Neo4j Aura (clearing all other data)...`);
+    
+    // Clear ALL data from Neo4j first
+    await graph.clearAllData();
+    console.log('✅ Cleared all existing Neo4j data');
+    
+    // Sync the new production space
+    await graph.syncSpaceToNeo4j(spaceId, spaceData);
+    console.log(`✅ ${spaceId} is now the sole production space in Neo4j Aura`);
+
+    res.json({ 
+      success: true, 
+      message: `${spaceId} set as production space`,
+      cellCount: Object.keys(spaceData.cells || {}).length,
+      dimensionCount: (spaceData.dimensions || []).length,
+      spaceId: spaceId
+    });
+  } catch (error) {
+    console.error('Error setting production space:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ error: 'Failed to set production space', details: errorMessage });
+  }
+});
+
+// Clear all Neo4j data
+app.post('/api/neo4j/clear-all', async (req, res) => {
+  try {
+    await graph.clearAllData();
+    res.json({ success: true, message: 'All Neo4j data cleared' });
+  } catch (error) {
+    console.error('Error clearing Neo4j data:', error);
+    res.status(500).json({ error: 'Failed to clear Neo4j data' });
+  }
+});
+
 // Get Neo4j visualization for a space
 app.get('/api/spaces/:spaceId/neo4j-visualization', authenticateToken, async (req: AuthRequest, res) => {
   const spaceId = req.params.spaceId;
@@ -460,9 +528,17 @@ io.on('connection', (socket) => {
 
 // Start server
 const PORT = process.env.PORT || 3001;
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, async () => {
   console.log('🚀 ZigZag server running on port', PORT);
   console.log('📝 Health check: http://localhost:' + PORT + '/health');
+  
+  // Initialize Neo4j connection
+  try {
+    await initNeo4j();
+    console.log('✅ Neo4j initialization completed');
+  } catch (error) {
+    console.error('❌ Neo4j initialization failed:', error);
+  }
 });
 
 // Graceful shutdown

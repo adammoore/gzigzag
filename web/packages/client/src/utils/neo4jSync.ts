@@ -103,6 +103,83 @@ export async function getSpaceVisualization(spaceId: string): Promise<any> {
 }
 
 /**
+ * Set a space as the production space (clears all other data from Neo4j)
+ * Use this for the main space you want visualized in Neo4j Aura
+ */
+export async function setProductionSpace(spaceId: string, space: ZZSpace): Promise<boolean> {
+  try {
+    console.log(`Setting ${spaceId} as production space in Neo4j Aura...`);
+
+    const spaceData = space.toSerializableFormat();
+    console.log(`Production space data: ${Object.keys(spaceData.cells || {}).length} cells, ${(spaceData.dimensions || []).length} dimensions`);
+
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? '' // In production, use relative URLs
+      : 'http://localhost:3001'; // In development, use explicit server URL
+      
+    const url = `${baseUrl}/api/neo4j/set-production-space`;
+    console.log(`Setting production space via: ${url}`);
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ spaceId, spaceData })
+    });
+
+    console.log(`Response status: ${response.status} ${response.statusText}`);
+
+    if (!response.ok) {
+      console.error(`Production space sync failed with status ${response.status}: ${response.statusText}`);
+      return false;
+    }
+
+    const result = await response.json();
+    console.log('✅ Production space set:', result);
+    
+    // Mark as production space in localStorage
+    localStorage.setItem('neo4j_production_space', spaceId);
+    
+    return true;
+  } catch (error) {
+    console.error('Error setting production space:', error);
+    return false;
+  }
+}
+
+/**
+ * Clear all data from Neo4j Aura
+ */
+export async function clearNeo4jData(): Promise<boolean> {
+  try {
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? '' 
+      : 'http://localhost:3001';
+      
+    const response = await fetch(`${baseUrl}/api/neo4j/clear-all`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      console.error(`Clear failed with status ${response.status}`);
+      return false;
+    }
+
+    const result = await response.json();
+    console.log('✅ Neo4j data cleared:', result);
+    localStorage.removeItem('neo4j_production_space');
+    return true;
+  } catch (error) {
+    console.error('Error clearing Neo4j data:', error);
+    return false;
+  }
+}
+
+/**
  * Auto-sync a space to Neo4j when it's first created or significantly modified
  * This should be called after creating a blank space or loading a space
  */

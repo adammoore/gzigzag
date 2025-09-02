@@ -59,6 +59,36 @@ export async function closeNeo4j(): Promise<void> {
 }
 
 export const graph = {
+  // Clear all data from Neo4j (for production space management)
+  async clearAllData(): Promise<void> {
+    if (!driver) {
+      logger.warn('Neo4j driver not initialized - skipping clear');
+      return;
+    }
+    
+    const session = getSession();
+    
+    try {
+      console.log('🧹 Clearing ALL data from Neo4j Aura...');
+      
+      await session.executeWrite(async tx => {
+        // Delete all nodes and relationships
+        const result = await tx.run('MATCH (n) DETACH DELETE n');
+        const deletedCount = result.summary.counters.updates().nodesDeleted;
+        const relationshipsDeleted = result.summary.counters.updates().relationshipsDeleted;
+        
+        console.log(`  Deleted ${deletedCount} nodes and ${relationshipsDeleted} relationships`);
+      });
+
+      logger.info('✅ All Neo4j data cleared successfully');
+    } catch (error) {
+      logger.error('❌ Failed to clear Neo4j data:', error);
+      throw error;
+    } finally {
+      await session.close();
+    }
+  },
+
   async createCellNode(cellId: string, spaceId: string): Promise<void> {
     if (!driver) return;
     const session = getSession();
@@ -238,21 +268,51 @@ export const graph = {
 
   // Sync an entire space structure to Neo4j
   async syncSpaceToNeo4j(spaceId: string, spaceData: any): Promise<void> {
-    if (!driver) return;
+    if (!driver) {
+      logger.warn('Neo4j driver not initialized - skipping sync');
+      return;
+    }
+    
     const session = getSession();
     
     try {
+      // Log incoming data for debugging
+      console.log('🔍 Neo4j Sync Debug:');
+      console.log(`  Space ID: ${spaceId}`);
+      console.log(`  Space Data Keys: ${Object.keys(spaceData || {})}`);
+      console.log(`  Cells Count: ${Object.keys(spaceData.cells || {}).length}`);
+      console.log(`  Dimensions: ${JSON.stringify(spaceData.dimensions || [])}`);
+      
+      if (spaceData.cells) {
+        console.log(`  Sample cell data:`, Object.entries(spaceData.cells).slice(0, 3));
+      }
+      
       // Start a transaction for atomic operations
       await session.executeWrite(async tx => {
         // First, clear existing space data
-        await tx.run(
+        console.log(`🧹 Clearing existing data for space ${spaceId}`);
+        const deleteResult = await tx.run(
           'MATCH (c:Cell {space_id: $spaceId}) DETACH DELETE c',
           { spaceId }
         );
+        console.log(`  Cleared ${deleteResult.summary.counters.updates().nodesDeleted} nodes`);
+
+        // Clear existing metadata
+        await tx.run(
+          'MATCH (s:SpaceMetadata {space_id: $spaceId}) DELETE s',
+          { spaceId }
+        );
+
+        let cellsCreated = 0;
+        let connectionsCreated = 0;
 
         // Create all cells first
+        console.log(`📦 Creating cells...`);
         for (const [cellId, cellData] of Object.entries(spaceData.cells || {})) {
-          await tx.run(
+          const text = (cellData as any).text || '';
+          console.log(`  Creating cell ${cellId}: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`);
+          
+          const result = await tx.run(
             `CREATE (c:Cell {
               id: $cellId, 
               space_id: $spaceId, 
@@ -262,48 +322,68 @@ export const graph = {
             { 
               cellId, 
               spaceId,
-              text: (cellData as any).text || ''
+              text
             }
           );
+          cellsCreated++;
         }
+        console.log(`✅ Created ${cellsCreated} cells`);
 
         // Create all connections
+        console.log(`🔗 Creating connections...`);
         for (const [cellId, cellData] of Object.entries(spaceData.cells || {})) {
           const connections = (cellData as any).connections || {};
+          console.log(`  Cell ${cellId} has connections:`, Object.keys(connections));
+          
           for (const [dimension, connectionData] of Object.entries(connections)) {
             const conn = connectionData as any;
+            console.log(`    Dimension ${dimension}:`, conn);
             
             // Create positive connection
             if (conn.positive) {
-              await tx.run(
-                `MATCH (from:Cell {id: $fromId, space_id: $spaceId}), 
-                       (to:Cell {id: $toId, space_id: $spaceId})
-                 CREATE (from)-[:CONNECTED {
-                   dimension: $dimension, 
-                   direction: 'positive',
-                   created_at: datetime()
-                 }]->(to)`,
-                { fromId: cellId, toId: conn.positive, dimension, spaceId }
-              );
+              console.log(`      Creating positive: ${cellId} → ${conn.positive} (${dimension})`);
+              try {
+                await tx.run(
+                  `MATCH (from:Cell {id: $fromId, space_id: $spaceId}), 
+                         (to:Cell {id: $toId, space_id: $spaceId})
+                   CREATE (from)-[:CONNECTED {
+                     dimension: $dimension, 
+                     direction: 'positive',
+                     created_at: datetime()
+                   }]->(to)`,
+                  { fromId: cellId, toId: conn.positive, dimension, spaceId }
+                );
+                connectionsCreated++;
+              } catch (error) {
+                console.error(`      Failed to create positive connection: ${error}`);
+              }
             }
 
             // Create negative connection  
             if (conn.negative) {
-              await tx.run(
-                `MATCH (from:Cell {id: $fromId, space_id: $spaceId}), 
-                       (to:Cell {id: $toId, space_id: $spaceId})
-                 CREATE (from)-[:CONNECTED {
-                   dimension: $dimension, 
-                   direction: 'negative', 
-                   created_at: datetime()
-                 }]->(to)`,
-                { fromId: cellId, toId: conn.negative, dimension, spaceId }
-              );
+              console.log(`      Creating negative: ${cellId} → ${conn.negative} (${dimension})`);
+              try {
+                await tx.run(
+                  `MATCH (from:Cell {id: $fromId, space_id: $spaceId}), 
+                         (to:Cell {id: $toId, space_id: $spaceId})
+                   CREATE (from)-[:CONNECTED {
+                     dimension: $dimension, 
+                     direction: 'negative', 
+                     created_at: datetime()
+                   }]->(to)`,
+                  { fromId: cellId, toId: conn.negative, dimension, spaceId }
+                );
+                connectionsCreated++;
+              } catch (error) {
+                console.error(`      Failed to create negative connection: ${error}`);
+              }
             }
           }
         }
+        console.log(`✅ Created ${connectionsCreated} connections`);
 
         // Add metadata about the space sync
+        console.log(`📊 Creating space metadata...`);
         await tx.run(
           `CREATE (s:SpaceMetadata {
             space_id: $spaceId,
@@ -317,11 +397,28 @@ export const graph = {
             dimensionCount: (spaceData.dimensions || []).length
           }
         );
+        console.log(`✅ Metadata created`);
+        
+        // Verify what was actually created
+        const verifyResult = await tx.run(
+          'MATCH (c:Cell {space_id: $spaceId}) RETURN count(c) as cellCount',
+          { spaceId }
+        );
+        const actualCellCount = verifyResult.records[0]?.get('cellCount')?.toNumber() || 0;
+        
+        const verifyConnResult = await tx.run(
+          'MATCH (:Cell {space_id: $spaceId})-[r:CONNECTED]-(:Cell {space_id: $spaceId}) RETURN count(r) as connCount',
+          { spaceId }
+        );
+        const actualConnCount = verifyConnResult.records[0]?.get('connCount')?.toNumber() || 0;
+        
+        console.log(`🔍 Verification: ${actualCellCount} cells, ${actualConnCount} connections created in Neo4j`);
       });
 
-      logger.info(`✅ Space ${spaceId} synced to Neo4j successfully`);
+      logger.info(`✅ Space ${spaceId} synced to Neo4j Aura successfully`);
     } catch (error) {
       logger.error(`❌ Failed to sync space ${spaceId} to Neo4j:`, error);
+      console.error(`Full error details:`, error);
       throw error;
     } finally {
       await session.close();

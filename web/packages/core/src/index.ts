@@ -254,6 +254,13 @@ export class ZZSpace {
     const cells: Record<string, any> = {};
     const dimensions = Array.from(this._dimensions);
 
+    console.log('🔍 ZZSpace Serialization Debug:');
+    console.log(`  Total cells: ${this._cells.size}`);
+    console.log(`  Total dimensions: ${dimensions.length}`);
+    console.log(`  Dimensions: ${JSON.stringify(dimensions)}`);
+    
+    let totalConnections = 0;
+
     // Serialize each cell with its connections (simplified approach)
     this._cells.forEach((cell, cellId) => {
       cells[cellId] = {
@@ -263,6 +270,8 @@ export class ZZSpace {
 
       // Get all connections for this cell using public methods
       const allConnections = cell.getAllConnections();
+      console.log(`  Cell ${cellId}: "${(cell.text || '').substring(0, 30)}${(cell.text || '').length > 30 ? '...' : ''}" has ${allConnections.size} dimension connections`);
+      
       allConnections.forEach((_, dimension) => {
         // For each dimension, get the step connections in both directions
         const posStep = cell.step(dimension, 1);
@@ -273,9 +282,25 @@ export class ZZSpace {
             positive: posStep?.id || null,
             negative: negStep?.id || null
           };
+          
+          if (posStep) {
+            console.log(`    ${dimension}+: ${cellId} → ${posStep.id}`);
+            totalConnections++;
+          }
+          if (negStep) {
+            console.log(`    ${dimension}-: ${cellId} → ${negStep.id}`);
+            totalConnections++;
+          }
         }
       });
     });
+
+    console.log(`📊 Serialization Summary:`);
+    console.log(`  Cells with content: ${Object.keys(cells).length}`);
+    console.log(`  Total connections: ${totalConnections}`);
+    if (Object.entries(cells).length > 0) {
+      console.log(`  Sample cell:`, Object.entries(cells)[0]);
+    }
 
     return {
       id: this._id,
