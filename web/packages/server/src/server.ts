@@ -268,6 +268,30 @@ app.post('/api/spaces/:spaceId/sync-neo4j', async (req, res) => {
   }
 });
 
+// Test AdamChemDemo creation
+app.get('/api/test-chem-demo', async (req, res) => {
+  try {
+    // Import and test the demo
+    const { createAdamChemDemo } = require('@zigzag/core/dist/demos/AdamChemDemo');
+    const space = createAdamChemDemo();
+    
+    res.json({
+      success: true,
+      message: 'AdamChemDemo created successfully',
+      cellCount: space.getCells().length,
+      dimensionCount: space.getDimensions().length,
+      spaceId: space.getId()
+    });
+  } catch (error: any) {
+    console.error('AdamChemDemo test failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 // Test endpoint to verify Neo4j data (no auth required for testing)
 app.get('/api/neo4j-test/:spaceId', async (req, res) => {
   const spaceId = req.params.spaceId;

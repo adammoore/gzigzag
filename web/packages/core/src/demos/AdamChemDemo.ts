@@ -155,27 +155,28 @@ export function createAdamChemDemo(): ZZSpace {
   // === 4. BIOCHEMICAL REACTIONS WITH COFACTORS ===
   console.log('Connecting reactions with cofactors...');
   // Following authentic GZZ principles: use CLONES for the same entity in different contexts
-  // Multiple reactions use the same cofactors - clone them to avoid connection conflicts
+  // In GZZ, each cell can only have ONE positive and ONE negative connection per dimension
+  // So we create a LINEAR CHAIN of clones connected via d.clone dimension
   
-  // Clone NADH for each reaction context (same molecule, different reaction contexts)
-  const nadhClone1 = space.createCell('NADH'); // For Isocitrate reaction
-  const nadhClone2 = space.createCell('NADH'); // For α-Ketoglutarate reaction  
-  const nadhClone3 = space.createCell('NADH'); // For Malate reaction
+  // Create NADH clone chain (authentic GZZ cloning pattern)
+  const nadhClone1 = space.createCell('NADH #1'); // For Isocitrate reaction
+  const nadhClone2 = space.createCell('NADH #2'); // For α-Ketoglutarate reaction  
+  const nadhClone3 = space.createCell('NADH #3'); // For Malate reaction
   
-  // Link clones to original via d.clone dimension (authentic GZZ cloning)
+  // Link clones in a linear chain via d.clone dimension (authentic GZZ)
   cofactorCells['NADH'].connect('d.clone', nadhClone1);
-  cofactorCells['NADH'].connect('d.clone', nadhClone2); 
-  cofactorCells['NADH'].connect('d.clone', nadhClone3);
+  nadhClone1.connect('d.clone', nadhClone2);
+  nadhClone2.connect('d.clone', nadhClone3);
   
-  // Clone NAD+ for each reaction context
-  const nadClone1 = space.createCell('NAD+'); // For Isocitrate reaction
-  const nadClone2 = space.createCell('NAD+'); // For α-Ketoglutarate reaction
-  const nadClone3 = space.createCell('NAD+'); // For Malate reaction
+  // Create NAD+ clone chain
+  const nadClone1 = space.createCell('NAD+ #1'); // For Isocitrate reaction
+  const nadClone2 = space.createCell('NAD+ #2'); // For α-Ketoglutarate reaction
+  const nadClone3 = space.createCell('NAD+ #3'); // For Malate reaction
   
-  // Link NAD+ clones to original
+  // Link NAD+ clones in linear chain
   cofactorCells['NAD+'].connect('d.clone', nadClone1);
-  cofactorCells['NAD+'].connect('d.clone', nadClone2);
-  cofactorCells['NAD+'].connect('d.clone', nadClone3);
+  nadClone1.connect('d.clone', nadClone2);
+  nadClone2.connect('d.clone', nadClone3);
 
   // Isocitrate → α-Ketoglutarate (isocitrate dehydrogenase) - Uses NAD+
   compoundCells['Isocitrate'].connect('d.consumes', nadClone1);
@@ -275,16 +276,28 @@ export function createAdamChemDemo(): ZZSpace {
 
   // === 9. ELEMENTAL COMPOSITION ANALYSIS ===
   console.log('Connecting compounds to elements...');
-  // Connect biochemical compounds to their constituent elements
-  compoundCells['Citrate'].connect('d.elements', elementCells['C']);
-  compoundCells['Citrate'].connect('d.elements', elementCells['H']);
-  compoundCells['Citrate'].connect('d.elements', elementCells['O']);
+  // Connect biochemical compounds to their constituent elements using GZZ-compliant chains
+  // Create element composition chains instead of multiple connections from same cell
+  
+  // Citrate composition: C6H8O7 (create a chain of elements)
+  const citrateElements = compoundCells['Citrate'].newCell('d.2', 1, 'Elements');
+  citrateElements.connect('d.elements', elementCells['C']);
+  const citrateH = citrateElements.newCell('d.elements', 1, 'H atoms');
+  citrateH.connect('d.elements', elementCells['H']);
+  const citrateO = citrateH.newCell('d.elements', 1, 'O atoms');
+  citrateO.connect('d.elements', elementCells['O']);
 
-  cofactorCells['NAD+'].connect('d.elements', elementCells['C']);
-  cofactorCells['NAD+'].connect('d.elements', elementCells['H']);
-  cofactorCells['NAD+'].connect('d.elements', elementCells['N']);
-  cofactorCells['NAD+'].connect('d.elements', elementCells['O']);
-  cofactorCells['NAD+'].connect('d.elements', elementCells['P']);
+  // NAD+ composition: C21H27N7O14P2 (create element chain)
+  const nadElements = cofactorCells['NAD+'].newCell('d.2', 1, 'Elements');
+  nadElements.connect('d.elements', elementCells['C']);
+  const nadH = nadElements.newCell('d.elements', 1, 'H atoms');
+  nadH.connect('d.elements', elementCells['H']);
+  const nadN = nadH.newCell('d.elements', 1, 'N atoms');
+  nadN.connect('d.elements', elementCells['N']);
+  const nadO = nadN.newCell('d.elements', 1, 'O atoms');
+  nadO.connect('d.elements', elementCells['O']);
+  const nadP = nadO.newCell('d.elements', 1, 'P atoms');
+  nadP.connect('d.elements', elementCells['P']);
 
   // === 10. ENERGY CALCULATIONS ===
   console.log('Adding energy relationships...');

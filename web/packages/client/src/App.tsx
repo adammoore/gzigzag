@@ -68,13 +68,23 @@ function App() {
   };
 
   const handleLaunchAdamChemDemo = async () => {
-    const demoSpace = createAdamChemDemo();
-    setSpace(demoSpace);
-    initializeCursors(demoSpace);
-    setMode('dualPane');
-    
-    // Auto-sync to Neo4j for graph analysis
-    await autoSyncSpace(demoSpace.id, demoSpace);
+    try {
+      console.log('🧪 Creating Adam\'s Chemistry Demo...');
+      const demoSpace = createAdamChemDemo();
+      console.log('✅ AdamChemDemo created successfully!', demoSpace);
+      
+      setSpace(demoSpace);
+      initializeCursors(demoSpace);
+      setMode('dualPane');
+      
+      // Auto-sync to Neo4j for graph analysis
+      await autoSyncSpace(demoSpace.id, demoSpace);
+      console.log('✅ AdamChemDemo setup complete!');
+    } catch (error) {
+      console.error('❌ Error creating AdamChemDemo:', error);
+      console.error('Full error details:', error);
+      alert(`Error creating chemistry demo: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
   const handleLaunchBlank = async () => {
