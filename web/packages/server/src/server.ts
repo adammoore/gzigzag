@@ -239,30 +239,41 @@ app.post('/api/spaces', authenticateToken, async (req: AuthRequest, res) => {
   }
 });
 
-// Sync space structure to Neo4j
-app.post('/api/spaces/:spaceId/sync-neo4j', authenticateToken, async (req: AuthRequest, res) => {
+// Sync space structure to Neo4j (supports both authenticated and demo mode)
+app.post('/api/spaces/:spaceId/sync-neo4j', async (req, res) => {
   const spaceId = req.params.spaceId;
   const { spaceData } = req.body;
+  const isDemo = spaceId.startsWith('demo_');
   
   try {
-    // Verify user has access to this space
-    const spaceResult = await pgPool.query(
-      'SELECT * FROM spaces WHERE id = $1 AND (owner_id = $2 OR id IN (SELECT space_id FROM space_permissions WHERE user_id = $2))',
-      [spaceId, req.user?.id]
-    );
+    if (!isDemo) {
+      // For authenticated users, verify access
+      const authResult = authenticateToken(req as AuthRequest, res, () => {});
+      if (!authResult) {
+        return; // authenticateToken already sent response
+      }
+      
+      const spaceResult = await pgPool.query(
+        'SELECT * FROM spaces WHERE id = $1 AND (owner_id = $2 OR id IN (SELECT space_id FROM space_permissions WHERE user_id = $2))',
+        [spaceId, (req as AuthRequest).user?.id]
+      );
 
-    if (spaceResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Space not found or access denied' });
+      if (spaceResult.rows.length === 0) {
+        return res.status(404).json({ error: 'Space not found or access denied' });
+      }
+    } else {
+      console.log(`Demo mode sync for space: ${spaceId}`);
     }
 
-    // Sync to Neo4j
+    // Sync to Neo4j (works for both authenticated and demo spaces)
     await graph.syncSpaceToNeo4j(spaceId, spaceData);
 
     res.json({ 
       success: true, 
-      message: 'Space synced to Neo4j successfully',
+      message: `Space synced to Neo4j successfully${isDemo ? ' (demo mode)' : ''}`,
       cellCount: Object.keys(spaceData.cells || {}).length,
-      dimensionCount: (spaceData.dimensions || []).length
+      dimensionCount: (spaceData.dimensions || []).length,
+      demo: isDemo
     });
   } catch (error) {
     console.error('Error syncing space to Neo4j:', error);

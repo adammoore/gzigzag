@@ -7,21 +7,29 @@ export async function syncSpaceToNeo4j(spaceId: string, space: ZZSpace): Promise
   try {
     // Get auth token from localStorage (assuming it's stored there)
     const token = localStorage.getItem('token');
+    
+    // For demo mode, create a demo-specific space ID and attempt sync without auth
+    const actualSpaceId = token ? spaceId : `demo_${spaceId}`;
+    
     if (!token) {
-      console.log('No auth token found - skipping Neo4j sync (probably in demo mode)');
-      return false;
+      console.log(`No auth token - attempting Neo4j sync in demo mode with space ID: ${actualSpaceId}`);
     }
 
     // Serialize the space to the format expected by Neo4j
     const spaceData = space.toSerializableFormat();
 
     // Send to server for Neo4j synchronization
-    const response = await fetch(`/api/spaces/${spaceId}/sync-neo4j`, {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`/api/spaces/${actualSpaceId}/sync-neo4j`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
+      headers,
       body: JSON.stringify({ spaceData })
     });
 

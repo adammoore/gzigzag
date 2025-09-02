@@ -34,7 +34,7 @@ export function createAdamChemDemo(): ZZSpace {
     'd.produces',      // Products generated
     'd.consumes',      // Reactants consumed  
     'd.yields',        // Products yielded
-    'd.reaction-instances', // Specific instances for each reaction step
+    'd.clone',         // Clone relationships (authentic GZZ)
     'd.ptablex',       // Periodic table X-axis
     'd.ptabley',       // Periodic table Y-axis
     'd.in-out',        // Input/output relationships
@@ -154,27 +154,37 @@ export function createAdamChemDemo(): ZZSpace {
 
   // === 4. BIOCHEMICAL REACTIONS WITH COFACTORS ===
   console.log('Connecting reactions with cofactors...');
-  // Note: In authentic GZZ, each cell can only have ONE connection per direction per dimension
-  // So we create separate cofactor instances for each reaction to avoid conflicts
+  // Following authentic GZZ principles: use CLONES for the same entity in different contexts
+  // Multiple reactions use the same cofactors - clone them to avoid connection conflicts
   
-  // Create specific instances of NADH for each reaction step (following GZZ rules)
-  const nadhFromIsocitrate = cofactorCells['NADH'].newCell('d.reaction-instances', 1, 'NADH (from Isocitrate step)');
-  const nadhFromKetoglutarate = cofactorCells['NADH'].newCell('d.reaction-instances', 1, 'NADH (from α-Ketoglutarate step)');
-  const nadhFromMalate = cofactorCells['NADH'].newCell('d.reaction-instances', 1, 'NADH (from Malate step)');
+  // Clone NADH for each reaction context (same molecule, different reaction contexts)
+  const nadhClone1 = space.createCell('NADH'); // For Isocitrate reaction
+  const nadhClone2 = space.createCell('NADH'); // For α-Ketoglutarate reaction  
+  const nadhClone3 = space.createCell('NADH'); // For Malate reaction
   
-  // Similarly, create NAD+ instances for each step
-  const nadForIsocitrate = cofactorCells['NAD+'].newCell('d.reaction-instances', 1, 'NAD+ (for Isocitrate step)');
-  const nadForKetoglutarate = cofactorCells['NAD+'].newCell('d.reaction-instances', 1, 'NAD+ (for α-Ketoglutarate step)');
-  const nadForMalate = cofactorCells['NAD+'].newCell('d.reaction-instances', 1, 'NAD+ (for Malate step)');
+  // Link clones to original via d.clone dimension (authentic GZZ cloning)
+  cofactorCells['NADH'].connect('d.clone', nadhClone1);
+  cofactorCells['NADH'].connect('d.clone', nadhClone2); 
+  cofactorCells['NADH'].connect('d.clone', nadhClone3);
+  
+  // Clone NAD+ for each reaction context
+  const nadClone1 = space.createCell('NAD+'); // For Isocitrate reaction
+  const nadClone2 = space.createCell('NAD+'); // For α-Ketoglutarate reaction
+  const nadClone3 = space.createCell('NAD+'); // For Malate reaction
+  
+  // Link NAD+ clones to original
+  cofactorCells['NAD+'].connect('d.clone', nadClone1);
+  cofactorCells['NAD+'].connect('d.clone', nadClone2);
+  cofactorCells['NAD+'].connect('d.clone', nadClone3);
 
   // Isocitrate → α-Ketoglutarate (isocitrate dehydrogenase) - Uses NAD+
-  compoundCells['Isocitrate'].connect('d.consumes', nadForIsocitrate);
-  compoundCells['α-Ketoglutarate'].connect('d.produces', nadhFromIsocitrate);
+  compoundCells['Isocitrate'].connect('d.consumes', nadClone1);
+  compoundCells['α-Ketoglutarate'].connect('d.produces', nadhClone1);
 
   // α-Ketoglutarate → Succinyl-CoA (α-ketoglutarate dehydrogenase complex)
-  compoundCells['α-Ketoglutarate'].connect('d.requires', nadForKetoglutarate);
+  compoundCells['α-Ketoglutarate'].connect('d.requires', nadClone2);
   compoundCells['α-Ketoglutarate'].connect('d.needs', cofactorCells['CoA-SH']);
-  compoundCells['Succinyl-CoA'].connect('d.yields', nadhFromKetoglutarate);
+  compoundCells['Succinyl-CoA'].connect('d.yields', nadhClone2);
 
   // Succinyl-CoA → Succinate (succinyl-CoA synthetase)
   compoundCells['Succinyl-CoA'].connect('d.requires', cofactorCells['GDP']);
@@ -185,8 +195,8 @@ export function createAdamChemDemo(): ZZSpace {
   compoundCells['Fumarate'].connect('d.produces', cofactorCells['FADH2']);
 
   // Malate → Oxaloacetate (malate dehydrogenase)
-  compoundCells['Malate'].connect('d.utilizes', nadForMalate);
-  compoundCells['Oxaloacetate'].connect('d.yields', nadhFromMalate);
+  compoundCells['Malate'].connect('d.utilizes', nadClone3);
+  compoundCells['Oxaloacetate'].connect('d.yields', nadhClone3);
 
   // === 5. AMINO ACID METABOLISM ===
   console.log('Adding amino acid connections...');
