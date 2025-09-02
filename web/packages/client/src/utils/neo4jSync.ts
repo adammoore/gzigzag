@@ -5,31 +5,17 @@ import { ZZSpace } from '@zigzag/core';
  */
 export async function syncSpaceToNeo4j(spaceId: string, space: ZZSpace): Promise<boolean> {
   try {
-    // Get auth token from localStorage (assuming it's stored there)
-    const token = localStorage.getItem('token');
-    
-    // For demo mode, create a demo-specific space ID and attempt sync without auth
-    const actualSpaceId = token ? spaceId : `demo_${spaceId}`;
-    
-    if (!token) {
-      console.log(`No auth token - attempting Neo4j sync in demo mode with space ID: ${actualSpaceId}`);
-    }
+    console.log(`Syncing space ${spaceId} to Neo4j Aura...`);
 
     // Serialize the space to the format expected by Neo4j
     const spaceData = space.toSerializableFormat();
 
-    // Send to server for Neo4j synchronization
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json'
-    };
-    
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    const response = await fetch(`/api/spaces/${actualSpaceId}/sync-neo4j`, {
+    // Send to server for Neo4j synchronization (no auth required)
+    const response = await fetch(`/api/spaces/${spaceId}/sync-neo4j`, {
       method: 'POST',
-      headers,
+      headers: {
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({ spaceData })
     });
 

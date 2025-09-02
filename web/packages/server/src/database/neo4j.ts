@@ -3,17 +3,25 @@ import { logger } from '../utils/logger';
 
 let driver: Driver | null = null;
 
+// Helper to get session with correct database
+function getSession() {
+  if (!driver) throw new Error('Neo4j driver not initialized');
+  const database = process.env.NEO4J_DATABASE || 'neo4j';
+  return driver.session({ database });
+}
+
 export async function initNeo4j(): Promise<void> {
   const uri = process.env.NEO4J_URI || 'bolt://localhost:7687';
-  const user = process.env.NEO4J_USER || 'neo4j';
+  const user = process.env.NEO4J_USERNAME || process.env.NEO4J_USER || 'neo4j';
   const password = process.env.NEO4J_PASSWORD || 'zigzag_password';
+  const database = process.env.NEO4J_DATABASE || 'neo4j';
 
   try {
     driver = neo4j.driver(uri, neo4j.auth.basic(user, password));
-    const session = driver.session();
+    const session = getSession();
     await session.run('RETURN 1');
     await session.close();
-    logger.info('✅ Neo4j connected successfully');
+    logger.info(`✅ Neo4j connected successfully to ${uri} (database: ${database})`);
     
     // Create constraints
     await createConstraints();
@@ -26,7 +34,7 @@ export async function initNeo4j(): Promise<void> {
 
 async function createConstraints(): Promise<void> {
   if (!driver) return;
-  const session = driver.session();
+  const session = getSession();
   try {
     await session.run(
       `CREATE CONSTRAINT cell_id_unique IF NOT EXISTS
@@ -53,7 +61,7 @@ export async function closeNeo4j(): Promise<void> {
 export const graph = {
   async createCellNode(cellId: string, spaceId: string): Promise<void> {
     if (!driver) return;
-    const session = driver.session();
+    const session = getSession();
     try {
       await session.run(
         'CREATE (c:Cell {id: $cellId, space_id: $spaceId, created_at: datetime()})',
@@ -66,7 +74,7 @@ export const graph = {
   
   async deleteCellNode(cellId: string): Promise<void> {
     if (!driver) return;
-    const session = driver.session();
+    const session = getSession();
     try {
       await session.run(
         'MATCH (c:Cell {id: $cellId}) DETACH DELETE c',
@@ -79,7 +87,7 @@ export const graph = {
   
   async connectCells(fromId: string, toId: string, dimension: string, direction: string = 'positive'): Promise<void> {
     if (!driver) return;
-    const session = driver.session();
+    const session = getSession();
     try {
       await session.run(
         `MATCH (from:Cell {id: $fromId}), (to:Cell {id: $toId})
@@ -93,7 +101,7 @@ export const graph = {
   
   async disconnectCells(fromId: string, toId: string, dimension: string): Promise<void> {
     if (!driver) return;
-    const session = driver.session();
+    const session = getSession();
     try {
       await session.run(
         `MATCH (from:Cell {id: $fromId})-[r:CONNECTED {dimension: $dimension}]->(to:Cell {id: $toId})
@@ -107,7 +115,7 @@ export const graph = {
   
   async getAllCellConnections(cellId: string): Promise<any[]> {
     if (!driver) return [];
-    const session = driver.session();
+    const session = getSession();
     try {
       const result = await session.run(
         `MATCH (c:Cell {id: $cellId})-[r:CONNECTED]-(connected:Cell)
@@ -122,7 +130,7 @@ export const graph = {
 
   async getCellConnections(cellId: string, dimension?: string): Promise<any[]> {
     if (!driver) return [];
-    const session = driver.session();
+    const session = getSession();
     try {
       const query = dimension
         ? `MATCH (c:Cell {id: $cellId})-[r:CONNECTED {dimension: $dimension}]-(connected:Cell)
@@ -139,7 +147,7 @@ export const graph = {
 
   async traverseDimension(cellId: string, dimension: string, direction: string = 'positive', maxSteps: number = 10): Promise<any[]> {
     if (!driver) return [];
-    const session = driver.session();
+    const session = getSession();
     try {
       const result = await session.run(
         `MATCH path = (start:Cell {id: $cellId})
@@ -156,7 +164,7 @@ export const graph = {
 
   async findPath(fromCellId: string, toCellId: string, maxLength: number = 10): Promise<any[]> {
     if (!driver) return [];
-    const session = driver.session();
+    const session = getSession();
     try {
       const result = await session.run(
         `MATCH path = allShortestPaths((start:Cell {id: $fromCellId})
@@ -174,7 +182,7 @@ export const graph = {
 
   async getDimensionStats(spaceId: string): Promise<any> {
     if (!driver) return {};
-    const session = driver.session();
+    const session = getSession();
     try {
       const result = await session.run(
         `MATCH (c:Cell {space_id: $spaceId})-[r:CONNECTED]-()
@@ -194,7 +202,7 @@ export const graph = {
 
   async getSpaceGraph(spaceId: string): Promise<any> {
     if (!driver) return { nodes: [], edges: [] };
-    const session = driver.session();
+    const session = getSession();
     try {
       const result = await session.run(
         `MATCH (c:Cell {space_id: $spaceId})
@@ -231,7 +239,7 @@ export const graph = {
   // Sync an entire space structure to Neo4j
   async syncSpaceToNeo4j(spaceId: string, spaceData: any): Promise<void> {
     if (!driver) return;
-    const session = driver.session();
+    const session = getSession();
     
     try {
       // Start a transaction for atomic operations
@@ -323,7 +331,7 @@ export const graph = {
   // Get complete space visualization data
   async getSpaceVisualization(spaceId: string): Promise<any> {
     if (!driver) return { nodes: [], edges: [], metadata: {} };
-    const session = driver.session();
+    const session = getSession();
     
     try {
       // Get space metadata
