@@ -13,9 +13,10 @@ export async function syncSpaceToNeo4j(spaceId: string, space: ZZSpace): Promise
 
     // Send to server for Neo4j synchronization (no auth required)
     // Handle both development and production URLs
-    const baseUrl = process.env.NODE_ENV === 'production' 
-      ? 'https://zigzag-api.onrender.com' // Production server URL
-      : 'http://localhost:3001'; // In development, use explicit server URL
+    const baseUrl = process.env.VITE_API_URL || 
+      (process.env.NODE_ENV === 'production' 
+        ? 'https://zigzag-api.onrender.com' // Production server URL
+        : 'http://localhost:3001'); // In development, use explicit server URL
       
     const url = `${baseUrl}/api/spaces/${spaceId}/sync-neo4j`;
     console.log(`Sending request to: ${url}`);
@@ -113,9 +114,10 @@ export async function setProductionSpace(spaceId: string, space: ZZSpace): Promi
     const spaceData = space.toSerializableFormat();
     console.log(`Production space data: ${Object.keys(spaceData.cells || {}).length} cells, ${(spaceData.dimensions || []).length} dimensions`);
 
-    const baseUrl = process.env.NODE_ENV === 'production' 
-      ? 'https://zigzag-api.onrender.com' // Production server URL
-      : 'http://localhost:3001'; // In development, use explicit server URL
+    const baseUrl = process.env.VITE_API_URL || 
+      (process.env.NODE_ENV === 'production' 
+        ? 'https://zigzag-api.onrender.com' // Production server URL
+        : 'http://localhost:3001'); // In development, use explicit server URL
       
     const url = `${baseUrl}/api/neo4j/set-production-space`;
     console.log(`Setting production space via: ${url}`);
@@ -153,9 +155,10 @@ export async function setProductionSpace(spaceId: string, space: ZZSpace): Promi
  */
 export async function clearNeo4jData(): Promise<boolean> {
   try {
-    const baseUrl = process.env.NODE_ENV === 'production' 
-      ? 'https://zigzag-api.onrender.com' // Production server URL
-      : 'http://localhost:3001';
+    const baseUrl = process.env.VITE_API_URL || 
+      (process.env.NODE_ENV === 'production' 
+        ? 'https://zigzag-api.onrender.com' // Production server URL
+        : 'http://localhost:3001');
       
     const response = await fetch(`${baseUrl}/api/neo4j/clear-all`, {
       method: 'POST',
