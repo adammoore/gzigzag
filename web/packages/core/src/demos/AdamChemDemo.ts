@@ -269,8 +269,8 @@ export function createAdamChemDemo(): ZZSpace {
   const kingGeorge = porphyria.newCell('d.sufferer', 1, 'King George III');
   
   // Connect to biochemical pathways
-  // Link King George to his condition
-  kingGeorge.connect('d.disease', porphyria);
+  // Note: King George is already connected to porphyria via d.sufferer (created from porphyria)
+  // No need for additional d.disease connection - would violate GZZ rules
   const heme = biochemPathways.newCell('d.2', 1, 'Heme Biosynthesis');
   porphyria.connect('d.biochem', heme);
 
