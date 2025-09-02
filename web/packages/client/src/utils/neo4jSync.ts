@@ -9,9 +9,18 @@ export async function syncSpaceToNeo4j(spaceId: string, space: ZZSpace): Promise
 
     // Serialize the space to the format expected by Neo4j
     const spaceData = space.toSerializableFormat();
+    console.log(`Space data prepared: ${Object.keys(spaceData.cells || {}).length} cells, ${(spaceData.dimensions || []).length} dimensions`);
 
     // Send to server for Neo4j synchronization (no auth required)
-    const response = await fetch(`/api/spaces/${spaceId}/sync-neo4j`, {
+    // Handle both development and production URLs
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? '' // In production, use relative URLs
+      : 'http://localhost:3001'; // In development, use explicit server URL
+      
+    const url = `${baseUrl}/api/spaces/${spaceId}/sync-neo4j`;
+    console.log(`Sending request to: ${url}`);
+    
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -19,16 +28,46 @@ export async function syncSpaceToNeo4j(spaceId: string, space: ZZSpace): Promise
       body: JSON.stringify({ spaceData })
     });
 
+    console.log(`Response status: ${response.status} ${response.statusText}`);
+
     if (!response.ok) {
-      const error = await response.json();
-      console.error('Failed to sync space to Neo4j:', error);
+      console.error(`Neo4j sync failed with status ${response.status}: ${response.statusText}`);
+      
+      // Try to get error details, but handle empty responses
+      try {
+        const errorText = await response.text();
+        if (errorText) {
+          const error = JSON.parse(errorText);
+          console.error('Neo4j sync error details:', error);
+        } else {
+          console.error('Empty error response from server');
+        }
+      } catch (parseError) {
+        console.error('Could not parse error response');
+      }
       return false;
     }
 
-    const result = await response.json();
-    console.log('✅ Space synced to Neo4j:', result);
-    return true;
+    // Handle successful response - check if it has content
+    const responseText = await response.text();
+    if (!responseText) {
+      console.error('Empty success response from Neo4j sync');
+      return false;
+    }
+
+    try {
+      const result = JSON.parse(responseText);
+      console.log('✅ Space synced to Neo4j:', result);
+      return true;
+    } catch (parseError) {
+      console.error('Could not parse success response:', responseText);
+      return false;
+    }
   } catch (error) {
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      console.log('Neo4j sync skipped: Server not available (running in client-only mode)');
+      return false;
+    }
     console.error('Error syncing space to Neo4j:', error);
     return false;
   }

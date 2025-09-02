@@ -254,35 +254,25 @@ export class ZZSpace {
     const cells: Record<string, any> = {};
     const dimensions = Array.from(this._dimensions);
 
-    // Serialize each cell with its connections
+    // Serialize each cell with its connections (simplified approach)
     this._cells.forEach((cell, cellId) => {
       cells[cellId] = {
-        text: cell.text,
+        text: cell.text || '',
         connections: {}
       };
 
-      // Get all connections for this cell
+      // Get all connections for this cell using public methods
       const allConnections = cell.getAllConnections();
       allConnections.forEach((_, dimension) => {
-        const connections = cell.getConnections(dimension);
-        if (connections.length > 0) {
-          cells[cellId].connections[dimension] = {};
-          
-          // Find positive and negative connections
-          connections.forEach(targetId => {
-            const targetCell = this.getCell(targetId);
-            if (targetCell) {
-              // Determine direction by checking if the target connects back
-              const targetConnections = targetCell.getConnections(dimension);
-              const isPositive = targetConnections.includes(cellId);
-              
-              if (isPositive) {
-                cells[cellId].connections[dimension].positive = targetId;
-              } else {
-                cells[cellId].connections[dimension].negative = targetId;
-              }
-            }
-          });
+        // For each dimension, get the step connections in both directions
+        const posStep = cell.step(dimension, 1);
+        const negStep = cell.step(dimension, -1);
+        
+        if (posStep || negStep) {
+          cells[cellId].connections[dimension] = {
+            positive: posStep?.id || null,
+            negative: negStep?.id || null
+          };
         }
       });
     });
