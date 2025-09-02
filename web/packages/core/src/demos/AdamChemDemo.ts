@@ -266,11 +266,11 @@ export function createAdamChemDemo(): ZZSpace {
   console.log('Adding disease associations...');
   const diseases = home.newCell('d.1', 1, 'Diseases & Conditions');
   const porphyria = diseases.newCell('d.disease', 1, 'Porphyria');
-  const kingGeorge = porphyria.newCell('d.sufferer', 1, 'King George III');
+  
+  // Create King George III as sufferer (connected via d.sufferer dimension)
+  porphyria.newCell('d.sufferer', 1, 'King George III');
   
   // Connect to biochemical pathways
-  // Note: King George is already connected to porphyria via d.sufferer (created from porphyria)
-  // No need for additional d.disease connection - would violate GZZ rules
   const heme = biochemPathways.newCell('d.2', 1, 'Heme Biosynthesis');
   porphyria.connect('d.biochem', heme);
 
